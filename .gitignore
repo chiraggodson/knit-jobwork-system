@@ -1,0 +1,22 @@
+# Node
+node_modules/
+.env
+dist/
+build/
+
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log
+yarn-error.log
