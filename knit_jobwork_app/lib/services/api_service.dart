@@ -547,4 +547,18 @@ static Future<List<dynamic>> getJobDispatchHistory(String jobNo) async {
 
 }
 
+
+/* ================= RESET FACTORY DATA ================= */
+
+  static Future<void> resetTransactions() async {
+
+    final res = await http.post(
+      Uri.parse("$baseUrl/admin/reset-transactions"),
+    );
+
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception("Reset failed");
+    }
+
+  }
 }

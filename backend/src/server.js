@@ -2,14 +2,26 @@ import app from "./app.js";
 import { pool } from "./db.js";
 
 const PORT = process.env.PORT || 4000;
+const HOST = "0.0.0.0";
 
-pool.query("SELECT 1")
-  .then(() => {
+async function startServer() {
+  try {
+    // Test DB connection
+    await pool.query("SELECT 1");
     console.log("✅ PostgreSQL connected");
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`🚀 Server running on port ${PORT} (Lan Enabled)`);
+
+    app.listen(PORT, HOST, () => {
+      console.log("=================================");
+      console.log("🚀 BBJOMS Started");
+      console.log(`🌐 Server: http://localhost:${PORT}`);
+      console.log(`🌐 LAN Access: http://192.168.1.19:${PORT}`);
+      console.log("=================================");
     });
-  })
-  .catch((err) => {
-    console.error("❌ DB connection failed", err);
-  });
+  } catch (error) {
+    console.error("❌ Database connection failed");
+    console.error(error);
+    process.exit(1);
+  }
+}
+
+startServer();
