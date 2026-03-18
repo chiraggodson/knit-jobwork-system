@@ -146,8 +146,8 @@ router.post("/bulk", async (req, res) => {
 
       await client.query(
         `INSERT INTO fabric_production
-        (job_id, roll_no, quantity,production_type)
-        VALUES ($1,$2,$3,$4)`,
+        (job_id, roll_no, quantity)
+        VALUES ($1,$2,$3)`,
         [job_id, rollNo, w]
       );
     }

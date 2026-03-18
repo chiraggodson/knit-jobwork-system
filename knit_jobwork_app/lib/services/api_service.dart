@@ -569,4 +569,16 @@ static void downloadPartyTemplate() async {
   await http.get(Uri.parse(url));
 }
 
+static Future<List<dynamic>> getJobIssuedYarns(int jobId) async {
+  final res = await http.get(
+    Uri.parse("$baseUrl/jobs/$jobId/issued-yarns"),
+  );
+
+  if (res.statusCode == 200) {
+    return jsonDecode(res.body);
+  } else {
+    throw Exception("Failed to load issued yarns");
+  }
+}
+
 }

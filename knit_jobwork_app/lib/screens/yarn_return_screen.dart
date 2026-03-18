@@ -39,8 +39,8 @@ class _YarnReturnScreenState
   Future<void> loadLots() async {
     try {
       final res =
-          await ApiService.getYarnLotsByParty(
-              widget.partyId);
+          await ApiService.getJobIssuedYarns(
+              widget.jobId);
 
       setState(() {
         yarnLots = res;
@@ -83,7 +83,7 @@ class _YarnReturnScreenState
     try {
       await ApiService.returnYarn(
         jobId: widget.jobId,
-        yarnLotId: selectedLot['yarn_lot_id'],
+        yarnLotId: selectedLot['yarn_lot'],
         quantity: qty,
       );
 

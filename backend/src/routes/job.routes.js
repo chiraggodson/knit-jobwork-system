@@ -620,5 +620,44 @@ router.put("/change-machine/:job_id", async (req, res) => {
     client.release();
   }
 });
+/* ================= Yarn Issues to machine ================= */
+router.get("/:job_id/issued-yarns", async (req, res) => {
+  const { job_id } = req.params;
+
+  try {
+    const result = await pool.query(
+      `
+      SELECT 
+  yl.id AS yarn_lot_id,
+  yl.lot_no,
+  ym.yarn_name,
+
+  jo.order_quantity -
+  COALESCE(fp.total_produced, 0) AS balance
+
+FROM job_orders jo
+
+LEFT JOIN (
+  SELECT job_id, SUM(quantity) AS total_produced
+  FROM fabric_production
+  GROUP BY job_id
+) fp ON fp.job_id = jo.id
+
+JOIN job_yarns jy ON jy.job_id = jo.id
+JOIN yarn_master ym ON ym.id = jy.yarn_id
+JOIN yarn_lot yl ON yl.yarn_id = jy.yarn_id
+
+WHERE jo.id = $1
+      `,
+      [job_id]
+    );
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error("ISSUED YARN FETCH ERROR:", err);
+    res.status(500).json({ error: "Failed to load yarns" });
+  }
+});
 
 export default router;
