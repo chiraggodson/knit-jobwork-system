@@ -1,148 +1,188 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:io';
 import '../config/app_config.dart';
 import '../services/api_service.dart';
 import 'user_management_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
-const SettingsScreen({super.key});
+  const SettingsScreen({super.key});
 
-@override
-State<SettingsScreen> createState() => _SettingsScreenState();
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  bool requireLogin = AppConfig.requireLogin;
 
-bool requireLogin = AppConfig.requireLogin;
+  Future<void> _uploadParties() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['csv'],
+    );
 
-@override
-Widget build(BuildContext context) {
+    if (result == null) return;
 
-return Scaffold(
+    File file = File(result.files.single.path!);
 
-  appBar: AppBar(title: const Text("Settings")),
+    try {
+      await ApiService.uploadParties(file);
 
-  body: ListView(
-    children: [
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Parties uploaded successfully")),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Upload failed: $e")),
+        );
+      }
+    }
+  }
 
-      SwitchListTile(
-        title: const Text("Require Login"),
-        subtitle: const Text("Disable during development"),
-        value: requireLogin,
-        onChanged: (value) async {
-
-          await AppConfig.setRequireLogin(value);
-
-          setState(() {
-            requireLogin = value;
-          });
-
-        },
-      ),
-
-      const Divider(),
-
-      ListTile(
-        leading: const Icon(Icons.people),
-        title: const Text("User Management"),
-        onTap: () {
-
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const UserManagementScreen(),
-            ),
-          );
-
-        },
-      ),
-
-      const Divider(),
-
-      /// ============================
-      /// FACTORY RESET SECTION
-      /// ============================
-
-      ListTile(
-        leading: const Icon(Icons.warning, color: Colors.red),
-        title: const Text(
-          "Reset Factory Transactions",
-          style: TextStyle(color: Colors.red),
-        ),
-        subtitle: const Text(
-          "Delete ALL jobs, yarn movements, production and dispatch data.\nMachines, fabrics and yarn names will remain.",
-        ),
-        onTap: () async {
-
-          final confirm = await showDialog<bool>(
-            context: context,
-            builder: (_) => AlertDialog(
-              title: const Text("Confirm Factory Reset"),
-              content: const Text(
-                "This will permanently delete:\n\n"
-                "• Jobs\n"
-                "• Yarn transactions\n"
-                "• Production records\n"
-                "• Dispatch records\n\n"
-                "Machines, fabrics and yarn names will NOT be deleted.\n\n"
-                "Are you sure?"
+  void _openUploadMenu() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.people),
+                title: const Text("Upload Parties"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _uploadParties();
+                },
               ),
-              actions: [
+              ListTile(
+                leading: const Icon(Icons.inventory),
+                title: const Text("Upload Yarn Inward"),
+                onTap: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Upload Yarn Inward not connected yet")),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.work),
+                title: const Text("Upload Job Orders"),
+                onTap: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Upload Job Orders not connected yet")),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context, false);
-                  },
-                  child: const Text("Cancel"),
-                ),
+  void _openDownloadMenu() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.people),
+                title: const Text("Download Parties Template"),
+                onTap: () {
+                  Navigator.pop(context);
+                  ApiService.downloadPartyTemplate();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.inventory),
+                title: const Text("Download Yarn Inward Template"),
+                onTap: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Template not connected yet")),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.work),
+                title: const Text("Download Job Orders Template"),
+                onTap: () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Template not connected yet")),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                  ),
-                  onPressed: () {
-                    Navigator.pop(context, true);
-                  },
-                  child: const Text("RESET"),
-                ),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Settings")),
+      body: ListView(
+        children: [
+          SwitchListTile(
+            title: const Text("Require Login"),
+            subtitle: const Text("Disable during development"),
+            value: requireLogin,
+            onChanged: (value) async {
+              await AppConfig.setRequireLogin(value);
 
-              ],
-            ),
-          );
+              setState(() {
+                requireLogin = value;
+              });
+            },
+          ),
 
-          if (confirm == true) {
+          const Divider(),
 
-            try {
-
-              await ApiService.resetTransactions();
-
-              if (!context.mounted) return;
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("Factory transactions reset successfully"),
+          ListTile(
+            leading: const Icon(Icons.people),
+            title: const Text("User Management"),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const UserManagementScreen(),
                 ),
               );
+            },
+          ),
 
-            } catch (e) {
+          const Divider(),
 
-              if (!context.mounted) return;
+          ListTile(
+            leading: const Icon(Icons.upload_file),
+            title: const Text("Upload Data"),
+            subtitle: const Text("Upload Parties, Yarn Inward, Job Orders"),
+            onTap: _openUploadMenu,
+          ),
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text("Reset failed: $e"),
-                ),
-              );
+          const Divider(),
 
-            }
+          ListTile(
+            leading: const Icon(Icons.download),
+            title: const Text("Download Templates"),
+            subtitle: const Text("Parties, Yarn Inward, Job Orders"),
+            onTap: _openDownloadMenu,
+          ),
 
-          }
-
-        },
+          const Divider(),
+        ],
       ),
-
-    ],
-  ),
-);
-
-}
+    );
+  }
 }

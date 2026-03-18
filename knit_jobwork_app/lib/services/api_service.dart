@@ -547,18 +547,26 @@ static Future<List<dynamic>> getJobDispatchHistory(String jobNo) async {
 
 }
 
+static Future<void> uploadParties(File file) async {
+  var request = http.MultipartRequest(
+    'POST',
+    Uri.parse("$baseUrl/parties/upload"),
+  );
 
-/* ================= RESET FACTORY DATA ================= */
+  request.files.add(
+    await http.MultipartFile.fromPath('file', file.path),
+  );
 
-  static Future<void> resetTransactions() async {
+  final res = await request.send();
 
-    final res = await http.post(
-      Uri.parse("$baseUrl/admin/reset-transactions"),
-    );
-
-    if (res.statusCode < 200 || res.statusCode >= 300) {
-      throw Exception("Reset failed");
-    }
-
+  if (res.statusCode < 200 || res.statusCode >= 300) {
+    throw Exception("Upload failed");
   }
+}
+
+static void downloadPartyTemplate() async {
+  final url = "$baseUrl/templates/party-template";
+  await http.get(Uri.parse(url));
+}
+
 }

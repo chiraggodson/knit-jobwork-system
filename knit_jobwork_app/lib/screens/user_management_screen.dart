@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../services/api_service.dart';
 
 class UserManagementScreen extends StatefulWidget {
   const UserManagementScreen({super.key});
@@ -19,11 +20,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   String role = "supervisor";
 
-  final String baseUrl = "http://192.168.1.19:4000/api";
-
   Future fetchUsers() async {
 
-    final response = await http.get(Uri.parse("$baseUrl/users"));
+    final response = await http.get(Uri.parse("${ApiService.baseUrl}/users"));
 
     setState(() {
       users = jsonDecode(response.body);
@@ -33,7 +32,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   Future addUser() async {
 
     await http.post(
-      Uri.parse("$baseUrl/users"),
+      Uri.parse("${ApiService.baseUrl}/users"),
       headers: {"Content-Type":"application/json"},
       body: jsonEncode({
         "name": nameController.text,
@@ -53,7 +52,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   Future deleteUser(int id) async {
 
     await http.delete(
-      Uri.parse("$baseUrl/users/$id"),
+      Uri.parse("${ApiService.baseUrl}/users/$id"),
     );
 
     fetchUsers();
