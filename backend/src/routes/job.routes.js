@@ -529,8 +529,8 @@ router.put("/:id", async (req, res) => {
 
         await client.query(
           `
-          INSERT INTO job_yarns (job_id, yarn_id, quantity)
-          VALUES ($1,$2,$3)
+          INSERT INTO job_yarns (job_id, yarn_id, quantity,percentage)
+          VALUES ($1,$2,$3,$4)
           `,
           [
             jobId,

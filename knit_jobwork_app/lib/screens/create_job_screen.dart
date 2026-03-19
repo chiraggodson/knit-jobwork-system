@@ -30,6 +30,8 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   int? fabricId;
 
   List yarns = [];
+
+  /// 🔥 UPDATED STRUCTURE
   List<Map<String, dynamic>> selectedYarns = [];
 
   bool loading = false;
@@ -37,22 +39,18 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   File? fabricImage;
   final ImagePicker picker = ImagePicker();
 
-  
-
   Future<void> pickImage() async {
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
 
-  final picked = await picker.pickImage(
-    source: ImageSource.gallery,
-    imageQuality: 80,
-  );
-
-  if (picked != null) {
-    setState(() {
-      fabricImage = File(picked.path);
-    });
+    if (picked != null) {
+      setState(() {
+        fabricImage = File(picked.path);
+      });
+    }
   }
-
-}
 
   @override
   void initState() {
@@ -96,7 +94,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
       return;
     }
 
-    // 🔹 Decide machine list
+    /// MACHINE
     if (!isMultiMachine) {
       if (singleMachineId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -121,19 +119,31 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
       return;
     }
 
+    /// 🔥 VALIDATION: % must be 100
+    double totalPercent = 0;
+
     for (var y in selectedYarns) {
-      if (y['yarn_id'] == null) {
+      if (y['yarn_id'] == null || y['percentage'] == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Select yarn")),
+          const SnackBar(content: Text("Select yarn & enter %")),
         );
         return;
       }
+
+      totalPercent += (y['percentage'] as double);
+    }
+
+    if ((totalPercent - 100).abs() > 0.5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Total % must be 100 (Current: $totalPercent)")),
+      );
+      return;
     }
 
     final cleanedYarns = selectedYarns.map((y) {
       return {
         "yarn_id": y['yarn_id'],
-        if (y['quantity'] != null) "quantity": y['quantity'],
+        "percentage": y['percentage'],
       };
     }).toList();
 
@@ -202,7 +212,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
 
               const SizedBox(height: 16),
 
-              /// 🔹 TOGGLE
+              /// MACHINE TOGGLE
               SwitchListTile(
                 title: const Text("Enable Multiple Machines"),
                 value: isMultiMachine,
@@ -217,7 +227,6 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
 
               const SizedBox(height: 8),
 
-              /// 🔹 MACHINE SECTION
               machineLoading
                   ? const CircularProgressIndicator()
                   : !isMultiMachine
@@ -302,54 +311,14 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                 validator: (v) => v == null || v.isEmpty ? "Required" : null,
               ),
 
-                const SizedBox(height: 20),
-
-                const Text(
-                  "Fabric Image (Optional)",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-
-                const SizedBox(height: 10),
-
-                GestureDetector(
-                  onTap: pickImage,
-                  child: Container(
-                    height: 180,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.grey.shade400),
-                    ),
-                    child: fabricImage == null
-                        ? const Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.image, size: 40, color: Colors.grey),
-                                SizedBox(height: 8),
-                                Text("Tap to upload fabric image"),
-                              ],
-                            ),
-                          )
-                        : ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Image.file(
-                              fabricImage!,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                  ),
-                ),
-
-              
               const SizedBox(height: 24),
 
               const Text("Yarns Required",
-                  style:
-                      TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
 
               const SizedBox(height: 10),
 
+              /// 🔥 UPDATED YARN UI
               ...selectedYarns.asMap().entries.map((entry) {
                 int index = entry.key;
                 var yarnItem = entry.value;
@@ -378,10 +347,29 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                           },
                         ),
                       ),
+
                       const SizedBox(width: 8),
+
+                      /// 🔥 PERCENT FIELD
+                      SizedBox(
+                        width: 80,
+                        child: TextFormField(
+                          initialValue: yarnItem['percentage']?.toString(),
+                          decoration: const InputDecoration(
+                            labelText: "%",
+                            border: OutlineInputBorder(),
+                          ),
+                          keyboardType:
+                              const TextInputType.numberWithOptions(decimal: true),
+                          onChanged: (val) {
+                            selectedYarns[index]['percentage'] =
+                                double.tryParse(val) ?? 0;
+                          },
+                        ),
+                      ),
+
                       IconButton(
-                        icon:
-                            const Icon(Icons.delete, color: Colors.red),
+                        icon: const Icon(Icons.delete, color: Colors.red),
                         onPressed: () {
                           setState(() {
                             selectedYarns.removeAt(index);
@@ -398,7 +386,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                   setState(() {
                     selectedYarns.add({
                       'yarn_id': null,
-                      'quantity': null,
+                      'percentage': 0,
                     });
                   });
                 },
@@ -414,8 +402,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                 child: ElevatedButton(
                   onPressed: loading ? null : submit,
                   child: loading
-                      ? const CircularProgressIndicator(
-                          color: Colors.white)
+                      ? const CircularProgressIndicator(color: Colors.white)
                       : const Text("Create Job"),
                 ),
               ),
