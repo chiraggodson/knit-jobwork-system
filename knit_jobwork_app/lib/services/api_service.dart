@@ -1,9 +1,9 @@
+import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'dart:io';
 
 class ApiService {
-  static const String baseUrl = "http://192.168.1.19:4000/api";
+  static const String baseUrl = "http://192.168.29.6:4000/api";
 
 static Future<void> createJob({
   required int partyId,

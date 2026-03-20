@@ -6,7 +6,7 @@ start cmd /k "cd backend && npm run dev"
 
 timeout /t 5
 
-cd C:\Users\acb\Desktop\App Development\knit-jobwork-system\knit_jobwork_app
+cd C:\Users\Raag\Desktop\App Development\knit-jobwork-system\knit_jobwork_app
 
 flutter run -d windows
 
