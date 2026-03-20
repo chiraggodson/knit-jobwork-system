@@ -1,11 +1,12 @@
-import 'package:flutter/material.dart';
-import '../services/api_service.dart';
-
 import 'dispatch_screen.dart';
 import 'edit_job_screen.dart';
 import 'issue_yarn_screen.dart';
-import 'production_entry_screen.dart';
 import 'yarn_return_screen.dart';
+import '../services/api_service.dart';
+import '../services/api_service.dart';
+import 'production_entry_screen.dart';
+import 'package:flutter/material.dart';
+
 
 
 class JobDetailScreen extends StatefulWidget {
@@ -334,13 +335,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                               MaterialPageRoute(
                                 builder: (_) => FullImageView(
                                   imageUrl:
-                                      "http://192.168.1.19:4000/uploads/${job['fabric_image']}",
+                                      "${ApiService.baseUrl}/uploads/${job['fabric_image']}",
                                 ),
                               ),
                             );
                           },
                           child: Image.network(
-                            "http://192.168.1.19:4000/uploads/${job['fabric_image']}",
+                            "${ApiService.baseUrl}/uploads/${job['fabric_image']}",
                             fit: BoxFit.cover,
                           ),
                         )
