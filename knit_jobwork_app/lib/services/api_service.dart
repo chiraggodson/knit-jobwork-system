@@ -115,44 +115,38 @@ static Future updateJob({
   required int gsm,
   required double orderQuantity,
   required List<Map<String, dynamic>> yarns,
+  File? image, // ✅ ADD THIS
 }) async {
 
-  final response = await http.put(
+  var request = http.MultipartRequest(
+    'PUT',
     Uri.parse("$baseUrl/jobs/$jobId"),
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: jsonEncode({
-      "party_id": partyId,
-      "machine_ids": machineIds,
-      "fabric_id": fabricId,
-      "gsm": gsm,
-      "order_quantity": orderQuantity,
-      "yarns": yarns,
-    }),
   );
 
-  if (response.statusCode != 200) {
-    throw Exception("Failed to update job");
+  request.fields['party_id'] = partyId.toString();
+  request.fields['machine_ids'] = jsonEncode(machineIds);
+  request.fields['fabric_id'] = fabricId.toString();
+  request.fields['gsm'] = gsm.toString();
+  request.fields['order_quantity'] = orderQuantity.toString();
+  request.fields['yarns'] = jsonEncode(yarns);
+
+  /// ✅ IMAGE SUPPORT
+  if (image != null) {
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'image',
+        image.path,
+      ),
+    );
   }
 
-  return jsonDecode(response.body);
-}
-static Future<Map<String, dynamic>> getJobDetails(int jobId) async {
+  final res = await request.send();
 
-  final response = await http.get(
-    Uri.parse("$baseUrl/jobs/details/$jobId"),
-  );
-
-  print("GET JOB DETAILS STATUS: ${response.statusCode}");
-  print("BODY: ${response.body}");
-
-  if (response.statusCode != 200) {
-    throw Exception("Failed to load job details");
+  if (res.statusCode < 200 || res.statusCode >= 300) {
+    throw Exception("Job update failed");
   }
-
-  return jsonDecode(response.body);
 }
+
   /* ================= PARTY ================= */
 
   static Future<List<dynamic>> getParties() async {

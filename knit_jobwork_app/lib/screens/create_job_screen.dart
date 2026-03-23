@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
-import '../services/api_service.dart';
 import 'dart:io';
+import '../services/api_service.dart';
+import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 class CreateJobScreen extends StatefulWidget {
@@ -30,8 +30,6 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   int? fabricId;
 
   List yarns = [];
-
-  /// 🔥 UPDATED STRUCTURE
   List<Map<String, dynamic>> selectedYarns = [];
 
   bool loading = false;
@@ -39,9 +37,10 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   File? fabricImage;
   final ImagePicker picker = ImagePicker();
 
-  Future<void> pickImage() async {
+  /// 🔥 IMAGE PICK (Gallery + Camera)
+  Future<void> pickImage(ImageSource source) async {
     final picked = await picker.pickImage(
-      source: ImageSource.gallery,
+      source: source,
       imageQuality: 80,
     );
 
@@ -50,6 +49,37 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
         fabricImage = File(picked.path);
       });
     }
+  }
+
+  /// 🔥 IMAGE PICK DIALOG
+  void showImagePickerOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text("Gallery"),
+                onTap: () {
+                  Navigator.pop(context);
+                  pickImage(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text("Camera"),
+                onTap: () {
+                  Navigator.pop(context);
+                  pickImage(ImageSource.camera);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -94,7 +124,6 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
       return;
     }
 
-    /// MACHINE
     if (!isMultiMachine) {
       if (singleMachineId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -119,7 +148,6 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
       return;
     }
 
-    /// 🔥 VALIDATION: % must be 100
     double totalPercent = 0;
 
     for (var y in selectedYarns) {
@@ -192,6 +220,44 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+
+              /// 🔥 IMAGE UPLOADER UI
+              const Text("Fabric Image",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+
+              const SizedBox(height: 10),
+
+              GestureDetector(
+                onTap: showImagePickerOptions,
+                child: Container(
+                  height: 160,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: fabricImage == null
+                      ? const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add_a_photo, size: 40),
+                              SizedBox(height: 8),
+                              Text("Tap to upload image"),
+                            ],
+                          ),
+                        )
+                      : ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.file(
+                            fabricImage!,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
 
               /// PARTY
               DropdownButtonFormField<int>(
@@ -318,7 +384,6 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
 
               const SizedBox(height: 10),
 
-              /// 🔥 UPDATED YARN UI
               ...selectedYarns.asMap().entries.map((entry) {
                 int index = entry.key;
                 var yarnItem = entry.value;
@@ -350,7 +415,6 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
 
                       const SizedBox(width: 8),
 
-                      /// 🔥 PERCENT FIELD
                       SizedBox(
                         width: 80,
                         child: TextFormField(
