@@ -295,10 +295,11 @@ router.get("/:job_no", async (req, res) => {
 
         COALESCE(SUM(
           CASE 
-            WHEN yl.transaction_type = 'ISSUE' THEN yl.quantity
-            WHEN yl.transaction_type = 'RETURN' THEN -yl.quantity
-            ELSE 0
-          END
+          WHEN yl.transaction_type = 'ISSUE' THEN yl.quantity
+          WHEN yl.transaction_type = 'RETURN' THEN -yl.quantity
+          WHEN yl.transaction_type = 'SETTING' THEN -yl.quantity  -- 🔥 important
+          ELSE 0
+        END
         ), 0) AS issued
 
       FROM job_yarns jy

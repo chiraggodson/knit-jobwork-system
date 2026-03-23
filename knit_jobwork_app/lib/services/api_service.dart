@@ -574,5 +574,21 @@ static Future<List<dynamic>> getJobIssuedYarns(int jobId) async {
     throw Exception("Failed to load issued yarns");
   }
 }
+static Future<void> addSetting({
+  required int jobId,
+  required double quantity,
+}) async {
+  final res = await http.post(
+    Uri.parse("$baseUrl/api/yarn/setting"),
+    headers: {"Content-Type": "application/json"},
+    body: jsonEncode({
+      "job_id": jobId,
+      "quantity": quantity,
+    }),
+  );
 
+  if (res.statusCode < 200 || res.statusCode >= 300) {
+    throw Exception(res.body);
+  }
+}
 }

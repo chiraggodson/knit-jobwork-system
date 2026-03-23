@@ -322,5 +322,21 @@ router.get("/stock/:party_id", async (req, res) => {
     res.status(500).json({ error: "Stock load failed" });
   }
 });
+router.post("/yarn/setting", async (req, res) => {
+  const { job_id, yarn_lot_id, quantity } = req.body;
 
+  try {
+    await pool.query(`
+      INSERT INTO yarn_ledger 
+      (job_id, yarn_lot_id, quantity, transaction_type)
+      VALUES ($1, $2, $3, 'SETTING')
+    `, [job_id, yarn_lot_id, quantity]);
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("SETTING ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
 export default router;

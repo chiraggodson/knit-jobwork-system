@@ -2,6 +2,7 @@ import 'dispatch_screen.dart';
 import 'edit_job_screen.dart';
 import 'issue_yarn_screen.dart';
 import 'yarn_return_screen.dart';
+import 'setting_fabric_screen.dart';
 import '../services/api_service.dart';
 import 'production_entry_screen.dart';
 import 'package:flutter/material.dart';
@@ -552,6 +553,24 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               /// ================= ACTIONS =================
               if (status == "OPEN")
                 actionButton(
+                  icon: Icons.edit,
+                  label: "Edit Job",
+                  onTap: () {
+                    refreshAfterNav(
+                      Navigator.push<bool>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => EditJobScreen(
+                            job: job,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                
+                if (status == "OPEN")
+                actionButton(
                   icon: Icons.inventory,
                   label: "Issue Yarn",
                   onTap: () {
@@ -568,7 +587,25 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     );
                   },
                 ),
-
+              if (status == "OPEN")
+                actionButton(
+                  icon: Icons.tune,
+                  label: "Setting Fabric",
+                  onTap: () {
+                    refreshAfterNav(
+                      Navigator.push<bool>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SettingFabricScreen(
+                            jobId: widget.jobId,
+                            partyId: job['party_id'],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                
               if (status == "OPEN")
                 actionButton(
                   icon: Icons.add_box,
