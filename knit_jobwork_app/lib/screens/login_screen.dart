@@ -1,9 +1,9 @@
 import 'dart:convert';
+import 'dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:knit_jobwork_app/services/api_service.dart';
 
-import 'dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -28,7 +28,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse("${ApiService.baseUrl}/auth/login"),
+        Uri.parse("${ApiService.baseUrl}/api/auth/login"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "username": usernameController.text,

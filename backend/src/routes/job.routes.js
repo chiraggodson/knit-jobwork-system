@@ -102,12 +102,12 @@ if (!Array.isArray(machine_ids) || machine_ids.length === 0) {
       if (yarns && yarns.length > 0) {
         for (const yarn of yarns) {
           await client.query(`
-            INSERT INTO job_yarns (job_id, yarn_id, quantity)
+            INSERT INTO job_yarns (job_id, yarn_id, percentage)
             VALUES ($1,$2,$3)
           `, [
             jobId,
             yarn.yarn_id,
-            yarn.quantity || null
+            yarn.percentage || null
           ]);
         }
       }
@@ -191,6 +191,9 @@ router.get("/", async (req, res) => {
     res.status(500).json({ error: "Failed to load jobs" });
   }
 });
+
+
+
 /* ================= CLOSE JOB ================= */
 router.put("/close/:job_no", async (req, res) => {
   try {
@@ -241,29 +244,24 @@ router.get("/:job_no", async (req, res) => {
         m.machine_no,
         f.name AS fabric_name,
 
-        /* 🔹 Yarn Aggregation */
         COALESCE((
           SELECT SUM(quantity)
           FROM yarn_ledger
-          WHERE job_id = j.id
-            AND transaction_type = 'ISSUE'
+          WHERE job_id = j.id AND transaction_type = 'ISSUE'
         ),0)::float AS yarn_issued,
 
         COALESCE((
           SELECT SUM(quantity)
           FROM yarn_ledger
-          WHERE job_id = j.id
-            AND transaction_type = 'RETURN'
+          WHERE job_id = j.id AND transaction_type = 'RETURN'
         ),0)::float AS yarn_returned,
 
         COALESCE((
           SELECT SUM(quantity)
           FROM yarn_ledger
-          WHERE job_id = j.id
-            AND transaction_type = 'WASTE'
+          WHERE job_id = j.id AND transaction_type = 'WASTE'
         ),0)::float AS waste,
 
-        /* 🔹 Production */
         COALESCE((
           SELECT SUM(quantity)
           FROM fabric_production
@@ -271,30 +269,15 @@ router.get("/:job_no", async (req, res) => {
         ),0)::float AS fabric_produced,
 
         COALESCE((
-          SELECT AVG(quantity)
-          FROM fabric_production
-          WHERE job_id = j.id
-        ),0)::float AS avg_roll_size,
-
-        /* 🔹 Dispatch */
-        COALESCE((
           SELECT SUM(quantity)
           FROM fabric_dispatch
           WHERE job_id = j.id
-        ),0)::float AS fabric_dispatched,
-
-        /* 🔹 Remaining Quantity */
-        (j.order_quantity - COALESCE((
-          SELECT SUM(quantity)
-          FROM fabric_production
-          WHERE job_id = j.id
-        ),0))::float AS remaining_quantity
+        ),0)::float AS fabric_dispatched
 
       FROM job_orders j
       LEFT JOIN parties p ON p.id = j.party_id
       LEFT JOIN machines m ON m.id = j.machine_id
       LEFT JOIN fabrics f ON f.id = j.fabric_id
-
       WHERE j.job_no = $1
     `, [job_no]);
 
@@ -302,14 +285,43 @@ router.get("/:job_no", async (req, res) => {
       return res.status(404).json({ error: "Job not found" });
     }
 
-    res.json(result.rows[0]);
+    const job = result.rows[0];
+
+    /* 🔥 CORRECT YARN QUERY */
+    const yarns = await pool.query(`
+      SELECT 
+        ym.yarn_name,
+        jy.percentage AS mix_percent,
+
+        COALESCE(SUM(
+          CASE 
+            WHEN yl.transaction_type = 'ISSUE' THEN yl.quantity
+            WHEN yl.transaction_type = 'RETURN' THEN -yl.quantity
+            ELSE 0
+          END
+        ), 0) AS issued
+
+      FROM job_yarns jy
+      JOIN yarn_master ym ON ym.id = jy.yarn_id
+
+      LEFT JOIN yarn_lot ylot ON ylot.yarn_id = jy.yarn_id
+      LEFT JOIN yarn_ledger yl 
+        ON yl.yarn_lot_id = ylot.id
+        AND yl.job_id = jy.job_id
+
+      WHERE jy.job_id = $1
+      GROUP BY ym.yarn_name, jy.percentage
+    `, [job.id]);
+
+    job.yarns = yarns.rows;
+
+    res.json(job);
 
   } catch (err) {
     console.error("❌ JOB DETAIL ERROR:", err);
     res.status(500).json({ error: "Failed to load job detail" });
   }
 });
-
 /* ================= JOB YARN HISTORY ================= */
 router.get("/:job_no/yarn-history", async (req, res) => {
   try {
@@ -529,13 +541,13 @@ router.put("/:id", async (req, res) => {
 
         await client.query(
           `
-          INSERT INTO job_yarns (job_id, yarn_id, quantity,percentage)
-          VALUES ($1,$2,$3,$4)
+          INSERT INTO job_yarns (job_id, yarn_id, percentage)
+          VALUES ($1,$2,$3,)
           `,
           [
             jobId,
             yarn.yarn_id,
-            yarn.quantity || null
+            yarn.percentage || null
           ]
         );
 

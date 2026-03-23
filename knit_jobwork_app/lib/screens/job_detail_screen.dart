@@ -3,9 +3,9 @@ import 'edit_job_screen.dart';
 import 'issue_yarn_screen.dart';
 import 'yarn_return_screen.dart';
 import '../services/api_service.dart';
-import '../services/api_service.dart';
 import 'production_entry_screen.dart';
 import 'package:flutter/material.dart';
+
 
 class JobDetailScreen extends StatefulWidget {
   final int jobId;
@@ -224,7 +224,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
       final mixPercent =
           double.tryParse(y['mix_percent']?.toString() ?? '0') ?? 0;
-
+      final displayName = "$name (${mixPercent.toStringAsFixed(0)}%)";
       final issued =
           double.tryParse(y['issued']?.toString() ?? '0') ?? 0;
 
@@ -244,7 +244,20 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(
           children: [
-            Expanded(child: Text(name)),
+            Expanded(
+  child: RichText(
+    text: TextSpan(
+      text: name,
+      style: const TextStyle(color: Colors.white),
+      children: [
+        TextSpan(
+          text: " (${mixPercent.toStringAsFixed(0)}%)",
+          style: const TextStyle(color: Colors.grey),
+        ),
+      ],
+    ),
+  ),
+),
             Expanded(child: Text("${issued.toStringAsFixed(2)}")),
             Expanded(child: Text("${required.toStringAsFixed(2)}")),
             Expanded(
@@ -284,7 +297,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             : ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: Image.network(
-                  "${ApiService.baseUrl}/uploads/${job['fabric_image']}",
+                  "${ApiService.baseUrl.replaceAll('/api', '')}/uploads/${job['fabric_image']}",
                   fit: BoxFit.cover,
                 ),
               ),

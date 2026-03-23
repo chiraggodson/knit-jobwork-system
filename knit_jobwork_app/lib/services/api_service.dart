@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = "http://192.168.29.6:4000/api";
+  static const String baseUrl = "http://192.168.29.6:4000";
 
 static Future<void> createJob({
   required int partyId,
@@ -17,7 +17,7 @@ static Future<void> createJob({
 
   var request = http.MultipartRequest(
     'POST',
-    Uri.parse("$baseUrl/jobs"),
+    Uri.parse("$baseUrl/api/jobs"),
   );
 
   request.fields['party_id'] = partyId.toString();
@@ -45,7 +45,7 @@ static Future<void> createJob({
   /* ================= JOBS ================= */
 
   static Future<List<dynamic>> getJobs() async {
-    final res = await http.get(Uri.parse("$baseUrl/jobs"));
+    final res = await http.get(Uri.parse("$baseUrl/api/jobs"));
     if (res.statusCode != 200) {
       throw Exception("Failed to load jobs");
     }
@@ -53,7 +53,7 @@ static Future<void> createJob({
   }
 
   static Future<Map<String, dynamic>> getJobDetail(String jobNo) async {
-    final res = await http.get(Uri.parse("$baseUrl/jobs/$jobNo"));
+    final res = await http.get(Uri.parse("$baseUrl/api/jobs/$jobNo"));
 
     if (res.statusCode < 200 || res.statusCode >= 300) {
       throw Exception("Error ${res.statusCode}: ${res.body}");
@@ -66,7 +66,7 @@ static Future<void> createJob({
 
   static Future<void> closeJob(String jobNo) async {
   final res = await http.put(
-    Uri.parse("$baseUrl/jobs/close/$jobNo"),
+    Uri.parse("$baseUrl/api/jobs/close/$jobNo"),
   );
 
   if (res.statusCode < 200 || res.statusCode >= 300) {
@@ -83,7 +83,7 @@ static Future<void> updateMachinePerformance({
   required double rollSize,
 }) async {
   await http.put(
-    Uri.parse("$baseUrl/machines/$machineId/performance"),
+    Uri.parse("$baseUrl/api/machines/$machineId/performance"),
     headers: {"Content-Type": "application/json"},
     body: jsonEncode({
       "rpm": rpm,
@@ -96,7 +96,7 @@ static Future<void> updateMachinePerformance({
 static Future<void> updateMachineStatus(
     int machineId, String status) async {
   final res = await http.put(
-    Uri.parse("$baseUrl/machines/$machineId/status"),
+    Uri.parse("$baseUrl/api/machines/$machineId/status"),
     headers: {"Content-Type": "application/json"},
     body: jsonEncode({"status": status}),
   );
@@ -120,7 +120,7 @@ static Future updateJob({
 
   var request = http.MultipartRequest(
     'PUT',
-    Uri.parse("$baseUrl/jobs/$jobId"),
+    Uri.parse("$baseUrl/api/jobs/$jobId"),
   );
 
   request.fields['party_id'] = partyId.toString();
@@ -150,7 +150,7 @@ static Future updateJob({
   /* ================= PARTY ================= */
 
   static Future<List<dynamic>> getParties() async {
-    final res = await http.get(Uri.parse("$baseUrl/parties"));
+    final res = await http.get(Uri.parse("$baseUrl/api/parties"));
     if (res.statusCode != 200) {
       throw Exception("Failed to load parties");
     }
@@ -162,7 +162,7 @@ static Future updateJob({
     required String phone,
   }) async {
     final res = await http.post(
-      Uri.parse("$baseUrl/parties"),
+      Uri.parse("$baseUrl/api/parties"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({"name": name, "phone": phone}),
     );
@@ -174,7 +174,7 @@ static Future updateJob({
   
     /* ================= YARN Party Ledger ================= */
 static Future<List<dynamic>> getPartyLedger() async {
-  final res = await http.get(Uri.parse("$baseUrl/yarn/party-ledger"));
+  final res = await http.get(Uri.parse("$baseUrl/api/yarn/party-ledger"));
 
   if (res.statusCode != 200) {
     throw Exception("Failed to load party ledger");
@@ -188,7 +188,7 @@ static Future<List<dynamic>> getPartyLedger() async {
   static Future<List<dynamic>> getYarnMaster() async {
     print("Calling GET YARN MASTER..    ");
 
-    final res = await http.get(Uri.parse("$baseUrl/yarn"));
+    final res = await http.get(Uri.parse("$baseUrl/api/yarn"));
       
     print("STATUS: ${res.statusCode}");
     print("BODY: ${res.body}");
@@ -205,7 +205,7 @@ static Future<List<dynamic>> getPartyLedger() async {
     required String yarnType,
   }) async {
     final res = await http.post(
-      Uri.parse("$baseUrl/yarn"),
+      Uri.parse("$baseUrl/api/yarn"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         "yarn_name": yarnName,
@@ -225,7 +225,7 @@ static Future<List<dynamic>> getPartyLedger() async {
   /* ================= YARN STOCK ================= */
 
   static Future<List<dynamic>> getYarnStock() async {
-    final res = await http.get(Uri.parse("$baseUrl/yarn/stock"));
+    final res = await http.get(Uri.parse("$baseUrl/api/yarn/stock"));
     if (res.statusCode != 200) {
       throw Exception("Failed to load yarn stock");
     }
@@ -234,7 +234,7 @@ static Future<List<dynamic>> getPartyLedger() async {
 
   static Future<List<dynamic>> getStockByParty(int partyId) async {
     final res =
-        await http.get(Uri.parse("$baseUrl/yarn/stock-by-party/$partyId"));
+        await http.get(Uri.parse("$baseUrl/api/yarn/stock-by-party/$partyId"));
 
     if (res.statusCode != 200) {
       throw Exception("Failed to load party yarn stock");
@@ -252,7 +252,7 @@ static Future<List<dynamic>> getPartyLedger() async {
     required String inwardDate,
   }) async {
     final res = await http.post(
-      Uri.parse("$baseUrl/yarn/inward"),
+      Uri.parse("$baseUrl/api/yarn/inward"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         "party_id": partyId,
@@ -275,7 +275,7 @@ static Future<List<dynamic>> getPartyLedger() async {
     required double quantity,
   }) async {
     final res = await http.post(
-      Uri.parse("$baseUrl/yarn/issue"),
+      Uri.parse("$baseUrl/api/yarn/issue"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         "job_id": jobId,
@@ -295,7 +295,7 @@ static Future<List<dynamic>> getPartyLedger() async {
     required double quantity,
   }) async {
     final res = await http.post(
-      Uri.parse("$baseUrl/yarn/return"),
+      Uri.parse("$baseUrl/api/yarn/return"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         "job_id": jobId,
@@ -315,7 +315,7 @@ static Future<List<dynamic>> getPartyLedger() async {
     required double quantity,
   }) async {
     final res = await http.post(
-      Uri.parse("$baseUrl/yarn/waste"),
+      Uri.parse("$baseUrl/api/yarn/waste"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         "job_id": jobId,
@@ -335,7 +335,7 @@ static Future bulkProduction(
 ) async {
 
   final res = await http.post(
-    Uri.parse("$baseUrl/production/bulk"),
+    Uri.parse("$baseUrl/api/production/bulk"),
     headers: {"Content-Type": "application/json"},
     body: jsonEncode({
       "job_id": jobId,
@@ -352,7 +352,7 @@ static Future bulkProduction(
   /* ================= PRODUCTS ================= */
 
   static Future<List<dynamic>> getFabrics() async {
-    final res = await http.get(Uri.parse("$baseUrl/fabrics"));
+    final res = await http.get(Uri.parse("$baseUrl/api/fabrics"));
     if (res.statusCode != 200) {
       throw Exception("Failed to load fabrics");
     }
@@ -361,7 +361,7 @@ static Future bulkProduction(
 
   static Future<List<Map<String, dynamic>>> getYarnLotsByParty(int partyId) async {
   final res =
-      await http.get(Uri.parse("$baseUrl/yarn/stock/$partyId"));
+      await http.get(Uri.parse("$baseUrl/api/yarn/stock/$partyId"));
 
   if (res.statusCode != 200) {
     throw Exception("Failed to load yarn lots");
@@ -375,7 +375,7 @@ static Future bulkProduction(
   /* ================= MACHINES ================= */
 
   static Future<List<dynamic>> getMachines() async {
-    final res = await http.get(Uri.parse("$baseUrl/machines"));
+    final res = await http.get(Uri.parse("$baseUrl/api/machines"));
     if (res.statusCode != 200) {
       throw Exception("Failed to load machines");
     }
@@ -384,7 +384,7 @@ static Future bulkProduction(
 
   static Future<void> createMachine(String machineNo) async {
     final res = await http.post(
-      Uri.parse("$baseUrl/machines"),
+      Uri.parse("$baseUrl/api/machines"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({"machine_no": machineNo}),
     );
@@ -397,7 +397,7 @@ static Future bulkProduction(
   /* ================= Yarn Stock BY PARTY ================= */
   static Future<List<dynamic>> getYarnStockByParty(int partyId) async {
     final res = await http.get(
-      Uri.parse("$baseUrl/yarn/stock-by-party/$partyId"),
+      Uri.parse("$baseUrl/api/yarn/stock-by-party/$partyId"),
     );
 
     if (res.statusCode != 200) {
@@ -413,7 +413,7 @@ static Future bulkProduction(
     String? description,
   }) async {
     final res = await http.post(
-      Uri.parse("$baseUrl/fabrics"),
+      Uri.parse("$baseUrl/api/fabrics"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         "name": name,
@@ -435,7 +435,7 @@ static Future bulkProduction(
     required double quantity,
   }) async {
     final res = await http.post(
-      Uri.parse("$baseUrl/production"),
+      Uri.parse("$baseUrl/api/production"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         "job_id": jobId,
@@ -453,7 +453,7 @@ static Future bulkProduction(
     static Future<void> deleteJob(int id) async {
 
     await http.delete(
-      Uri.parse("$baseUrl/jobs/$id"),
+      Uri.parse("$baseUrl/api/jobs/$id"),
     );
 
   }
@@ -461,7 +461,7 @@ static Future bulkProduction(
     /* ================= JOB YARN HISTORY ================= */
   static Future<List<dynamic>> getJobYarnHistory(String jobNo) async {
     final res = await http.get(
-      Uri.parse("$baseUrl/jobs/$jobNo/yarn-history"),
+      Uri.parse("$baseUrl/api/jobs/$jobNo/yarn-history"),
     );
 
     if (res.statusCode != 200) {
@@ -474,7 +474,7 @@ static Future bulkProduction(
   /* ================= JOB PRODUCTION HISTORY ================= */
   static Future<List<dynamic>> getJobProductionHistory(String jobNo) async {
     final res = await http.get(
-      Uri.parse("$baseUrl/jobs/$jobNo/production-history"),
+      Uri.parse("$baseUrl/api/jobs/$jobNo/production-history"),
     );
 
     if (res.statusCode != 200) {
@@ -494,7 +494,7 @@ static Future bulkProduction(
   static Future<List<dynamic>> getDispatchRolls(int jobId) async {
 
     final res = await http.get(
-      Uri.parse("$baseUrl/dispatch/job/$jobId"),
+      Uri.parse("$baseUrl/api/dispatch/job/$jobId"),
     );
 
     if (res.statusCode != 200) {
@@ -512,7 +512,7 @@ static Future bulkProduction(
   }) async {
 
     final res = await http.post(
-      Uri.parse("$baseUrl/dispatch"),
+      Uri.parse("$baseUrl/api/dispatch"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         "job_id": jobId,
@@ -530,7 +530,7 @@ static Future bulkProduction(
 static Future<List<dynamic>> getJobDispatchHistory(String jobNo) async {
 
   final res = await http.get(
-    Uri.parse("$baseUrl/jobs/$jobNo/dispatch-history"),
+    Uri.parse("$baseUrl/api/jobs/$jobNo/dispatch-history"),
   );
 
   if (res.statusCode != 200) {
@@ -544,7 +544,7 @@ static Future<List<dynamic>> getJobDispatchHistory(String jobNo) async {
 static Future<void> uploadParties(File file) async {
   var request = http.MultipartRequest(
     'POST',
-    Uri.parse("$baseUrl/parties/upload"),
+    Uri.parse("$baseUrl/api/parties/upload"),
   );
 
   request.files.add(
@@ -559,13 +559,13 @@ static Future<void> uploadParties(File file) async {
 }
 
 static void downloadPartyTemplate() async {
-  final url = "$baseUrl/templates/party-template";
+  final url = "$baseUrl/api/templates/party-template";
   await http.get(Uri.parse(url));
 }
 
 static Future<List<dynamic>> getJobIssuedYarns(int jobId) async {
   final res = await http.get(
-    Uri.parse("$baseUrl/jobs/$jobId/issued-yarns"),
+    Uri.parse("$baseUrl/api/jobs/$jobId/issued-yarns"),
   );
 
   if (res.statusCode == 200) {
