@@ -7,8 +7,6 @@ import '../services/api_service.dart';
 import 'production_entry_screen.dart';
 import 'package:flutter/material.dart';
 
-
-
 class JobDetailScreen extends StatefulWidget {
   final int jobId;
   final String jobNo;
@@ -162,213 +160,162 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           final fabricDispatched = safeDouble(job['fabric_dispatched']);
           final warehouseStock = fabricProduced - fabricDispatched;
           final yarns = job['yarns'] ?? [];
+          print("YARNS DATA: $yarns");
           return ListView(
             padding: const EdgeInsets.all(20),
             children: [
         
   /// ================= HEADER =================///
               _card(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
+  child: LayoutBuilder(
+    builder: (context, constraints) {
+      bool wide = constraints.maxWidth > 900;
 
-                    bool wide = constraints.maxWidth > 700;
+      /// LEFT: PARTY INFO
+      Widget leftSection = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            partyName.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Divider(color: Colors.grey),
+          const SizedBox(height: 12),
 
-                    Widget leftSection = Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          partyName,
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        const Divider(color: Colors.grey),
-                        const SizedBox(height: 16),
-                        infoRow("Machine", machineNo),
-                        infoRow("Fabric", fabricType),
-                        infoRow("GSM", gsm),
-                        infoRow("Order Quantity",
-                            "${orderQty.toStringAsFixed(2)} kg"),
-                        const SizedBox(height: 16),
-                        
-                        const SizedBox(height: 12),
+          infoRow("Machine", machineNo),
+          infoRow("Fabric", fabricType),
+          infoRow("GSM", gsm),
+          infoRow("Order Quantity",
+              "${orderQty.toStringAsFixed(2)} kg"),
+        ],
+      );
 
-                        if (yarns.isNotEmpty) ...[
-                          const Text(
-                            "Yarns",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF00BFA6),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
+      /// CENTER: YARNS REQUIRED TABLE
+     Widget yarnSection = Column(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+    const Text(
+      "Yarns Required",
+      style: TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: 16,
+      ),
+    ),
+    const SizedBox(height: 12),
 
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 6,
-                            children: yarns.map<Widget>((y) {
+    /// HEADER
+    Row(
+      children: const [
+        Expanded(child: Text("Yarn")),
+        Expanded(child: Text("Issued")),
+        Expanded(child: Text("Required")),
+        Expanded(child: Text("Balance")),
+      ],
+    ),
+    const Divider(),
 
-                              final name = y['yarn_name'] ?? '';
-                              final qty = y['quantity'];
+    /// DATA
+    ...yarns.map<Widget>((y) {
+      final name = y['yarn_name'] ?? '';
 
-                              return Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.25),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: Colors.grey.shade800),
-                                ),
-                                child: Text(
-                                  qty == null ? name : "$name (${qty} kg)",
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                              );
+      final mixPercent =
+          double.tryParse(y['mix_percent']?.toString() ?? '0') ?? 0;
 
-                            }).toList(),
-                          ),
-                        ],
+      final issued =
+          double.tryParse(y['issued']?.toString() ?? '0') ?? 0;
 
-                        Row(
-                          children: [
+      final required = orderQty * (mixPercent / 100);
+      final balance = required - issued;
 
-                            ElevatedButton.icon(
-                              icon: const Icon(Icons.edit, size: 18),
-                              label: const Text("EDIT"),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF00BFA6),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                              ),
-                              onPressed: () {
-                                refreshAfterNav(
-                                  Navigator.push<bool>(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => EditJobScreen(
-                                        job: job,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
+      Color balanceColor;
+      if (balance > 5) {
+        balanceColor = Colors.redAccent;
+      } else if (balance > 0) {
+        balanceColor = Colors.orangeAccent;
+      } else {
+        balanceColor = Colors.greenAccent;
+      }
 
-                            const SizedBox(width: 12),
-
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.delete, size: 18),
-                            label: const Text("DELETE"),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.redAccent,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                            ),
-                            onPressed: () async {
-
-                              final confirm = await showDialog(
-                                context: context,
-                                builder: (_) => AlertDialog(
-                                  title: const Text("Delete Job"),
-                                  content: const Text(
-                                      "Are you sure you want to delete this job?"),
-                                  actions: [
-
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context, false),
-                                      child: const Text("Cancel"),
-                                    ),
-
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.redAccent,
-                                      ),
-                                      onPressed: () => Navigator.pop(context, true),
-                                      child: const Text("Delete"),
-                                    ),
-
-                                  ],
-                                ),
-                              );
-
-                              if (confirm == true) {
-                                await ApiService.deleteJob(widget.jobId);
-                                if (!mounted) return;
-                                Navigator.pop(context, true);
-
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  );
-
-                  Widget imageSection = Container(
-                    height: 180,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: const Color(0xFF00BFA6).withOpacity(0.4),
-                      ),
-                    ),
-                    child: job['fabric_image'] == null
-                    ? const Center(
-                        child: Text(
-                          "No Fabric Image",
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      )
-                    : ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => FullImageView(
-                                  imageUrl:
-                                      "${ApiService.baseUrl}/uploads/${job['fabric_image']}",
-                                ),
-                              ),
-                            );
-                          },
-                          child: Image.network(
-                            "${ApiService.baseUrl}/uploads/${job['fabric_image']}",
-                            fit: BoxFit.cover,
-                          ),
-                        )
-                      ),
-                  );
-
-                  if (wide) {
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(flex: 3, child: leftSection),
-                        const SizedBox(width: 24),
-                        Expanded(flex: 2, child: imageSection),
-                      ],
-                    );
-                  } else {
-                    return Column(
-                      children: [
-                        leftSection,
-                        const SizedBox(height: 20),
-                        imageSection,
-                      ],
-                    );
-                  }
-                },
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          children: [
+            Expanded(child: Text(name)),
+            Expanded(child: Text("${issued.toStringAsFixed(2)}")),
+            Expanded(child: Text("${required.toStringAsFixed(2)}")),
+            Expanded(
+              child: Text(
+                "${balance.toStringAsFixed(2)}",
+                style: TextStyle(
+                  color: balanceColor,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
+          ],
+        ),
+      );
+    }).toList(),  // ✅ VERY IMPORTANT
+
+  ], // ✅ THIS WAS MISSING
+);
+
+      /// RIGHT: IMAGE
+      Widget imageSection = Container(
+        height: 160,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.4),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: const Color(0xFF00BFA6).withOpacity(0.4),
+          ),
+        ),
+        child: job['fabric_image'] == null
+            ? const Center(
+                child: Text(
+                  "No Fabric Image",
+                  style: TextStyle(color: Colors.grey),
+                ),
+              )
+            : ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.network(
+                  "${ApiService.baseUrl}/uploads/${job['fabric_image']}",
+                  fit: BoxFit.cover,
+                ),
+              ),
+      );
+
+      /// FINAL LAYOUT
+      if (wide) {
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(flex: 3, child: leftSection),
+            const SizedBox(width: 20),
+            Expanded(flex: 4, child: yarnSection),
+            const SizedBox(width: 20),
+            Expanded(flex: 3, child: imageSection),
+          ],
+        );
+      } else {
+        return Column(
+          children: [
+            leftSection,
+            const SizedBox(height: 16),
+            yarnSection,
+            const SizedBox(height: 16),
+            imageSection,
+          ],
+        );
+      }
+    },
+  ),
+),
              
               
               /// ================= STATS =================
@@ -390,7 +337,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   ],
                 ),
               ),
-                          
+                
               /// ================= YARN HISTORY =================
               _card(
                 child: ExpansionTile(
@@ -402,6 +349,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   ),
                   onExpansionChanged: (val) async {
                     setState(() => yarnExpanded = val);
+                    
                     if (val && yarnHistory.isEmpty) {
                       await loadYarnHistory();
                     }
@@ -855,5 +803,6 @@ class FullImageView extends StatelessWidget {
       ),
     );
   }
+   
 }
 
