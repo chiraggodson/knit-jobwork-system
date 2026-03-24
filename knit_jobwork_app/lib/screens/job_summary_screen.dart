@@ -1,12 +1,14 @@
-import 'package:flutter/material.dart';
-import '../services/api_service.dart';
 import 'create_job_screen.dart';
 import 'job_detail_screen.dart';
+import '../services/api_service.dart';
+import 'package:flutter/material.dart';
 
 /* ================= JOB SUMMARY SCREEN ================= */
 
 class JobReportScreen extends StatefulWidget {
-  const JobReportScreen({super.key});
+  final String role;
+  
+  const JobReportScreen({super.key, required this.role});
 
   @override
   State<JobReportScreen> createState() => _JobReportScreenState();
@@ -272,11 +274,14 @@ Widget _sortTile(String title, String value) {
         ],
       ),
 
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: widget.role == "admin"
+    ? FloatingActionButton(
         tooltip: "Create Job",
-        onPressed: () => _navigateAndRefresh(const CreateJobScreen()),
+        onPressed: () =>
+            _navigateAndRefresh(const CreateJobScreen()),
         child: const Icon(Icons.add),
-      ),
+      )
+    : null,
 
       body: FutureBuilder<List<dynamic>>(
         future: _jobsFuture,

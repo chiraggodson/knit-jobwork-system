@@ -40,14 +40,23 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (response.statusCode == 200 && data["success"] == true) {
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => Dashboard(
-              role: data["user"]["role"],
-            ),
-          ),
-        );
+        final role = data["user"]["role"];
+
+if (role == "supervisor") {
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(
+      builder: (_) => const JobReportScreen(),
+    ),
+  );
+} else {
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(
+     builder: (_) => JobReportScreen(role: role),
+    ),
+  );
+}
 
       } else {
         setState(() {

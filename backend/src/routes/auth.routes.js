@@ -1,34 +1,53 @@
 import express from "express";
+import jwt from "jsonwebtoken";
 import { pool } from "../db.js";
 
 const router = express.Router();
 
-/* ================= LOGIN ================= */
+const SECRET = "atlas_secret_key"; // change later
 
 router.post("/login", async (req, res) => {
-  try {
-    const { username, password } = req.body;
+  const { username, password } = req.body;
 
+  try {
     const result = await pool.query(
-      "SELECT id, name, role FROM users WHERE username = $1 AND password = $2",
-      [username, password]
+      "SELECT * FROM users WHERE username = $1",
+      [username]
     );
 
     if (result.rows.length === 0) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid username or password"
-      });
+      return res.json({ success: false, message: "User not found" });
     }
+
+    const user = result.rows[0];
+
+    if (user.password !== password) {
+      return res.json({ success: false, message: "Wrong password" });
+    }
+
+    const token = jwt.sign(
+      {
+        id: user.id,
+        role: user.role,
+        username: user.username,
+      },
+      SECRET,
+      { expiresIn: "7d" }
+    );
 
     res.json({
       success: true,
-      user: result.rows[0]
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        role: user.role,
+      },
     });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: "Login failed" });
   }
 });
 
