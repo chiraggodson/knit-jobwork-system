@@ -1,13 +1,13 @@
+import 'config/app_config.dart';
+import 'screens/reports_screen.dart';
+import 'screens/machine_screen.dart';
 import 'package:flutter/material.dart';
+import 'screens/party_yarn_screen.dart';
+import 'screens/job_summary_screen.dart';
+import 'screens/dashboard_home_screen.dart';
+import 'screens/product_manager_screen.dart';
 import 'package:knit_jobwork_app/screens/login_screen.dart';
 
-import 'config/app_config.dart';
-import 'screens/dashboard_home_screen.dart';
-import 'screens/party_yarn_screen.dart';
-import 'screens/reports_screen.dart';
-import 'screens/product_manager_screen.dart';
-import 'screens/machine_screen.dart';
-import 'screens/job_summary_screen.dart';
 
 
 void main() async {
@@ -62,8 +62,8 @@ class KnitApp extends StatelessWidget {
   initialRoute: AppConfig.requireLogin ? "/login" : "/dashboard",
 
   routes: {
-    "/login": (context) => const LoginScreen(),
-    "/dashboard": (context) => const Dashboard(),
+    "/login": (context) =>  LoginScreen(),
+    "/dashboard": (context) => Dashboard(),
   },
 );  
   }
@@ -72,15 +72,18 @@ class KnitApp extends StatelessWidget {
 /* ================= DASHBOARD ================= */
 
 class Dashboard extends StatefulWidget {
+ 
   const Dashboard({super.key});
 
   @override
-  State<Dashboard> createState() => _DashboardState();
+  State<Dashboard> createState() => _DashboardState(
+    
+  );
 }
 
 class _DashboardState extends State<Dashboard> {
   int _index = 0;
-
+  String get role => widget.role;
   final List<Widget> screens = [
     DashboardHome(),
     JobReportScreen(),
@@ -315,4 +318,3 @@ class _NavItem {
 
   const _NavItem(this.icon, this.label);
 }
-

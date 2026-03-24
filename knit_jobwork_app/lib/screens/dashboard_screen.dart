@@ -1,13 +1,13 @@
-import 'package:flutter/material.dart';
-
-import 'dashboard_home_screen.dart';
-import 'job_summary_screen.dart';
-import 'party_yarn_screen.dart';
+import 'login_screen.dart';
 import 'machine_screen.dart';
-import 'product_manager_screen.dart';
 import 'reports_screen.dart';
 import 'settings_screen.dart';
-import 'login_screen.dart';
+import 'party_yarn_screen.dart';
+import 'job_summary_screen.dart';
+import 'dashboard_home_screen.dart';
+import 'product_manager_screen.dart';
+import 'package:flutter/material.dart';
+
 
 class Dashboard extends StatefulWidget {
 
@@ -33,7 +33,7 @@ class _DashboardState extends State<Dashboard> {
     if (widget.role == "admin") {
 
       screens = [
-        const DashboardHome(),
+        const DashboardHome(role: "admin"),
         const JobReportScreen(),
         const PartyYarnScreen(),
         const MachineScreen(),
@@ -55,7 +55,7 @@ class _DashboardState extends State<Dashboard> {
     } else {
 
       screens = [
-        const DashboardHome(),
+        const DashboardHome(role: "admin")),
         const PartyYarnScreen(),
         const ReportsScreen(),
       ];

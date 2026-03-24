@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'dashboard_screen.dart';
+import 'job_summary_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:knit_jobwork_app/services/api_service.dart';
 
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+   LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
