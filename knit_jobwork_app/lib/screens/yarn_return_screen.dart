@@ -169,50 +169,39 @@ class _YarnReturnScreenState
                     child: Column(
                       children: [
 
-                        /// LOT DROPDOWN
-                        DropdownButtonFormField<
-                            dynamic>(
-                          value:
-                              selectedLot,
-                          decoration:
-                              const InputDecoration(
-                            labelText:
-                                "Select Yarn Lot",
-                            border:
-                                OutlineInputBorder(),
-                          ),
-                          items: yarnLots
-                              .map((lot) {
-                            final yarnName =
-                                lot['yarn_name'] ??
-                                    '';
-                            final lotNo =
-                                lot['lot_no'] ??
-                                    '';
-                            final balance =
-                                double.tryParse(
-                                        lot['balance']
-                                            .toString()) ??
-                                    0;
+                        DropdownButtonFormField<dynamic>(
+  value: selectedLot,
+  decoration: const InputDecoration(
+    labelText: "Select Yarn Lot",
+    border: OutlineInputBorder(),
+  ),
+  items: yarnLots.map((lot) {
+    final yarnName = lot['yarn_name'] ?? '';
+    final lotNo = lot['lot_no'] ?? '';
+    final balance =
+        double.tryParse(lot['balance'].toString()) ?? 0;
 
-                            return DropdownMenuItem(
-                              value: lot,
-                              child: Text(
-                                "$yarnName | Lot: $lotNo | Balance: ${balance.toStringAsFixed(2)} kg",
-                                overflow:
-                                    TextOverflow
-                                        .ellipsis,
-                              ),
-                            );
-                          }).toList(),
-                          onChanged:
-                              (val) {
-                            setState(() {
-                              selectedLot =
-                                  val;
-                            });
-                          },
-                        ),
+    return DropdownMenuItem(
+      value: lot,
+      child: Text(
+        "$yarnName | Lot: $lotNo | Bal: ${balance.toStringAsFixed(2)} kg",
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }).toList(),
+
+  onChanged: yarnLots.isEmpty
+      ? null
+      : (val) {
+          setState(() {
+            selectedLot = val;
+          });
+        },
+
+  hint: yarnLots.isEmpty
+      ? const Text("No yarn available (Issue yarn first)")
+      : const Text("Select Yarn Lot"),
+),
 
                         const SizedBox(
                             height: 20),
