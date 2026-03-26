@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'party_stock_report_screen.dart';
 
+
 class ReportsScreen extends StatelessWidget {
   const ReportsScreen({super.key});
 
@@ -13,36 +14,67 @@ class ReportsScreen extends StatelessWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),
-        
         child: GridView.count(
           crossAxisCount: 2,
           crossAxisSpacing: 20,
           mainAxisSpacing: 20,
           children: [
+
+            // 🔹 JOB REPORTS
             _ReportCard(
               icon: Icons.factory,
               title: "Job Reports",
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>  JobReportsScreen(),
+                  ),
+                );
+              },
             ),
+
+            // 🔹 YARN REPORTS
             _ReportCard(
               icon: Icons.inventory,
               title: "Yarn Reports",
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => YarnReportsScreen(),
+                  ),
+                );
+              },
             ),
+
+            // 🔹 MACHINE REPORTS
             _ReportCard(
               icon: Icons.precision_manufacturing,
               title: "Machine Reports",
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>  MachineReportsScreen(),
+                  ),
+                );
+              },
             ),
+
+            // 🔹 STOCK SUMMARY (Already working)
             _ReportCard(
-  icon: Icons.bar_chart,
-  title: "Stock Summary",
-  onTap: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const PartyStockReportScreen(),
-      ),
-    );
-  },
-),
+              icon: Icons.bar_chart,
+              title: "Stock Summary",
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PartyStockReportScreen(),
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -53,12 +85,12 @@ class ReportsScreen extends StatelessWidget {
 class _ReportCard extends StatelessWidget {
   final IconData icon;
   final String title;
-  final VoidCallback? onTap;   // ✅ ADD THIS
+  final VoidCallback? onTap;
 
   const _ReportCard({
     required this.icon,
     required this.title,
-    this.onTap,                // ✅ ADD THIS
+    this.onTap,
   });
 
   @override
@@ -71,7 +103,7 @@ class _ReportCard extends StatelessWidget {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: onTap,   // ✅ USE IT HERE
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -85,6 +117,7 @@ class _ReportCard extends StatelessWidget {
               const SizedBox(height: 16),
               Text(
                 title,
+                textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
