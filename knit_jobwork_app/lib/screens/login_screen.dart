@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dashboard_screen.dart';
-import 'job_summary_screen.dart';
+
+import '../models/user_session.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:knit_jobwork_app/services/api_service.dart';
+import '../models/user_session.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -43,21 +45,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
         final role = data["user"]["role"];
 
-if (role == "supervisor") {
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(
-      builder: (_) => const JobReportScreen(),
-    ),
-  );
-} else {
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(
-     builder: (_) => JobReportScreen(role: role),
-    ),
-  );
-}
+final session = UserSession(
+role: data["user"]["role"],
+permissions: List<String>.from(data["user"]["permissions"] ?? []),
+);
+
+Navigator.pushReplacement(
+context,
+MaterialPageRoute(
+builder: (_) => Dashboard(session: session),
+),
+);
+
 
       } else {
         setState(() {

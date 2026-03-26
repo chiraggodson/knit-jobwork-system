@@ -6,238 +6,156 @@ import 'party_yarn_screen.dart';
 import 'job_summary_screen.dart';
 import 'dashboard_home_screen.dart';
 import 'product_manager_screen.dart';
+import '../models/user_session.dart';
 import 'package:flutter/material.dart';
 
-
 class Dashboard extends StatefulWidget {
+final UserSession session;
 
-  final String role;
+const Dashboard({super.key, required this.session});
 
-  const Dashboard({super.key, required this.role});
-
-  @override
-  State<Dashboard> createState() => _DashboardState();
+@override
+State<Dashboard> createState() => _DashboardState();
 }
 
 class _DashboardState extends State<Dashboard> {
+int _index = 0;
 
-  int _index = 0;
+late List<_NavItem> navItems;
 
-  late List<Widget> screens;
-  late List<_NavItem> navItems;
+@override
+void initState() {
+super.initState();
 
-  @override
-  void initState() {
-    super.initState();
+final s = widget.session;
 
-    if (widget.role == "admin") {
+navItems = [
+  if (s.has("VIEW_DASHBOARD"))
+    const _NavItem(Icons.dashboard, "Dashboard"),
 
-      screens = [
-        const DashboardHome(role: "admin"),
-        const JobReportScreen(),
-        const PartyYarnScreen(),
-        const MachineScreen(),
-        const ProductManagerScreen(),
-        const ReportsScreen(),
-        const SettingsScreen(),
-      ];
+  if (s.has("VIEW_JOBS"))
+    const _NavItem(Icons.factory, "Jobwork Orders"),
 
-      navItems = const [
-        _NavItem(Icons.dashboard, "Dashboard"),
-        _NavItem(Icons.factory, "Jobwork Orders"),
-        _NavItem(Icons.inventory, "Yarn"),
-        _NavItem(Icons.precision_manufacturing, "Machines"),
-        _NavItem(Icons.category, "Products"),
-        _NavItem(Icons.bar_chart, "Reports"),
-        _NavItem(Icons.settings, "Settings"),
-      ];
+  if (s.has("VIEW_YARN"))
+    const _NavItem(Icons.inventory, "Yarn"),
 
-    } else {
+  if (s.has("VIEW_MACHINES"))
+    const _NavItem(Icons.precision_manufacturing, "Machines"),
 
-      screens = [
-        const DashboardHome(role: "admin")),
-        const PartyYarnScreen(),
-        const ReportsScreen(),
-      ];
+  if (s.has("VIEW_PRODUCTS"))
+    const _NavItem(Icons.category, "Products"),
 
-      navItems = const [
-        _NavItem(Icons.dashboard, "Dashboard"),
-        _NavItem(Icons.inventory, "Yarn"),
-        _NavItem(Icons.bar_chart, "Reports"),
-      ];
-    }
-  }
+  if (s.has("VIEW_REPORTS"))
+    const _NavItem(Icons.bar_chart, "Reports"),
 
-  @override
-  Widget build(BuildContext context) {
+  if (s.has("VIEW_SETTINGS"))
+    const _NavItem(Icons.settings, "Settings"),
+];
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
 
-        /// DESKTOP LAYOUT
-        if (constraints.maxWidth > 900) {
+}
 
-          return Scaffold(
+List<Widget> _getVisibleScreens() {
+final s = widget.session;
 
-            body: Row(
-              children: [
+List<Widget> list = [];
 
-                /// SIDEBAR
-                _buildSidebar(),
+if (s.has("VIEW_DASHBOARD")) list.add(const DashboardHome());
+if (s.has("VIEW_JOBS")) list.add(const JobReportScreen());
+if (s.has("VIEW_YARN")) list.add(const PartyYarnScreen());
+if (s.has("VIEW_MACHINES")) list.add(const MachineScreen());
+if (s.has("VIEW_PRODUCTS")) list.add(const ProductManagerScreen());
+if (s.has("VIEW_REPORTS")) list.add(const ReportsScreen());
+if (s.has("VIEW_SETTINGS")) list.add(const SettingsScreen());
 
-                /// MAIN CONTENT
-                Expanded(
-                  child: Container(
-                    color: const Color(0xFF121212),
+return list;
 
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          maxWidth: 1600,
-                        ),
-                        child: screens[_index],
-                      ),
-                    ),
-                  ),
-                ),
 
-              ],
+}
+
+@override
+Widget build(BuildContext context) {
+final screens = _getVisibleScreens();
+
+return LayoutBuilder(
+  builder: (context, constraints) {
+    if (constraints.maxWidth > 900) {
+      return Scaffold(
+        body: Row(
+          children: [
+            _buildSidebar(),
+            Expanded(
+              child: Container(
+                color: const Color(0xFF121212),
+                child: screens[_index],
+              ),
             ),
-          );
-        }
-
-        /// MOBILE LAYOUT
-        return Scaffold(
-          body: screens[_index],
-        );
-      },
-    );
-  }
-
-  Widget _buildSidebar() {
-
-    return Container(
-      width: 230,
-      color: const Color(0xFF1A1A1A),
-
-      child: SafeArea(
-
-        /// FIXES OVERFLOW
-        child: SingleChildScrollView(
-
-          child: Column(
-            children: [
-
-              const SizedBox(height: 20),
-
-              Image.asset(
-                'assets/logo.png',
-                height: 160,
-              ),
-
-              const SizedBox(height: 10),
-
-              const Text(
-                "ERP SYSTEM",
-                style: TextStyle(
-                  fontSize: 20,
-                  letterSpacing: 2,
-                  color: Colors.grey,
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              ...List.generate(navItems.length, (i) {
-
-                final selected = i == _index;
-
-                return InkWell(
-                  onTap: () => setState(() => _index = i),
-
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
-
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 12),
-
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? const Color(0xFF00BFA6).withOpacity(0.15)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-
-                    child: Row(
-                      children: [
-
-                        Icon(
-                          navItems[i].icon,
-                          color: selected
-                              ? const Color(0xFF00BFA6)
-                              : Colors.grey,
-                        ),
-
-                        const SizedBox(width: 14),
-
-                        Text(
-                          navItems[i].label,
-                          style: TextStyle(
-                            color: selected
-                                ? const Color(0xFF00BFA6)
-                                : Colors.grey,
-                            fontWeight: selected
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                          ),
-                        ),
-
-                      ],
-                    ),
-                  ),
-                );
-              }),
-
-              const SizedBox(height: 40),
-
-              /// LOGOUT BUTTON
-              ListTile(
-                leading: const Icon(Icons.logout,
-                    color: Colors.redAccent),
-
-                title: const Text(
-                  "Logout",
-                  style: TextStyle(color: Colors.white),
-                ),
-
-                onTap: () {
-
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const LoginScreen(),
-                    ),
-                  );
-
-                },
-              ),
-
-              const SizedBox(height: 20),
-
-            ],
-          ),
+          ],
         ),
-      ),
+      );
+    }
+
+    return Scaffold(
+      body: screens[_index],
     );
-  }
+  },
+);
+
+
+}
+
+Widget _buildSidebar() {
+return Container(
+width: 230,
+color: const Color(0xFF1A1A1A),
+child: SafeArea(
+child: Column(
+children: [
+const SizedBox(height: 20),
+Image.asset('assets/logo.png', height: 120),
+const SizedBox(height: 30),
+
+        ...List.generate(navItems.length, (i) {
+          final selected = i == _index;
+
+          return ListTile(
+            leading: Icon(
+              navItems[i].icon,
+              color: selected ? const Color(0xFF00BFA6) : Colors.grey,
+            ),
+            title: Text(
+              navItems[i].label,
+              style: TextStyle(
+                color: selected ? const Color(0xFF00BFA6) : Colors.grey,
+              ),
+            ),
+            onTap: () => setState(() => _index = i),
+          );
+        }),
+
+        const Spacer(),
+
+        ListTile(
+          leading: const Icon(Icons.logout, color: Colors.red),
+          title: const Text("Logout"),
+          onTap: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => LoginScreen()),
+            );
+          },
+        ),
+      ],
+    ),
+  ),
+);
+
+}
 }
 
 class _NavItem {
+final IconData icon;
+final String label;
 
-  final IconData icon;
-  final String label;
-
-  const _NavItem(this.icon, this.label);
-
+const _NavItem(this.icon, this.label);
 }

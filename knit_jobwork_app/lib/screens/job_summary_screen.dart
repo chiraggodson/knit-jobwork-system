@@ -6,9 +6,9 @@ import 'package:flutter/material.dart';
 /* ================= JOB SUMMARY SCREEN ================= */
 
 class JobReportScreen extends StatefulWidget {
-  final String role;
+
   
-  const JobReportScreen({super.key, required this.role});
+  const JobReportScreen({super.key});
 
   @override
   State<JobReportScreen> createState() => _JobReportScreenState();
@@ -274,8 +274,8 @@ Widget _sortTile(String title, String value) {
         ],
       ),
 
-      floatingActionButton: widget.role == "admin"
-    ? FloatingActionButton(
+      floatingActionButton: FloatingActionButton(
+        
         tooltip: "Create Job",
         onPressed: () =>
             _navigateAndRefresh(const CreateJobScreen()),

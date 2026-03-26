@@ -83,7 +83,7 @@ class Dashboard extends StatefulWidget {
 
 class _DashboardState extends State<Dashboard> {
   int _index = 0;
-  String get role => widget.role;
+
   final List<Widget> screens = [
     DashboardHome(),
     JobReportScreen(),
