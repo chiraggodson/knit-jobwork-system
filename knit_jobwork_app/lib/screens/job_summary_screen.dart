@@ -1,11 +1,13 @@
-import 'package:flutter/material.dart';
-import '../services/api_service.dart';
 import 'create_job_screen.dart';
 import 'job_detail_screen.dart';
+import '../services/api_service.dart';
+import 'package:flutter/material.dart';
 
 /* ================= JOB SUMMARY SCREEN ================= */
 
 class JobReportScreen extends StatefulWidget {
+
+  
   const JobReportScreen({super.key});
 
   @override
@@ -272,9 +274,11 @@ Widget _sortTile(String title, String value) {
         ],
       ),
 
-      floatingActionButton: FloatingActionButton(
+     
+        floatingActionButton: FloatingActionButton(
         tooltip: "Create Job",
-        onPressed: () => _navigateAndRefresh(const CreateJobScreen()),
+        onPressed: () =>
+            _navigateAndRefresh(const CreateJobScreen()),
         child: const Icon(Icons.add),
       ),
 

@@ -1,12 +1,15 @@
 import 'dart:convert';
 import 'dashboard_screen.dart';
+
+import '../models/user_session.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:knit_jobwork_app/services/api_service.dart';
+import '../models/user_session.dart';
 
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+   LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -40,14 +43,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (response.statusCode == 200 && data["success"] == true) {
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => Dashboard(
-              role: data["user"]["role"],
-            ),
-          ),
-        );
+        final role = data["user"]["role"];
+
+final session = UserSession(
+role: data["user"]["role"],
+permissions: List<String>.from(data["user"]["permissions"] ?? []),
+);
+
+Navigator.pushReplacement(
+context,
+MaterialPageRoute(
+builder: (_) => Dashboard(session: session),
+),
+);
+
 
       } else {
         setState(() {

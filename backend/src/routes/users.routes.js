@@ -1,11 +1,12 @@
 import express from "express";
+import { authMiddleware, adminOnly } from "../middleware/auth.js";
 import { pool } from "../db.js";
 
 const router = express.Router();
 
 /* ================= GET USERS ================= */
 
-router.get("/", async (req, res) => {
+router.get("/", authMiddleware, adminOnly, async (req, res) => {
   try {
 
     const result = await pool.query(
@@ -23,7 +24,7 @@ router.get("/", async (req, res) => {
 
 /* ================= ADD USER ================= */
 
-router.post("/", async (req, res) => {
+router.post("/", authMiddleware, adminOnly, async (req, res) => {
 
   const { name, username, password, role } = req.body;
 
@@ -47,7 +48,7 @@ router.post("/", async (req, res) => {
 
 /* ================= DELETE USER ================= */
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", authMiddleware, adminOnly, async (req, res) => {
 
   const { id } = req.params;
 

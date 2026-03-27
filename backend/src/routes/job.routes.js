@@ -1,4 +1,5 @@
 console.log("✅ job.routes.js LOADED");
+import { authMiddleware, adminOnly } from "../middleware/auth.js";
 
 import express from "express";
 import { pool } from "../db.js";
@@ -24,7 +25,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-router.post("/", upload.single("image"), async (req, res) =>  {
+router.post("/", authMiddleware, adminOnly, upload.single("image"), async (req, res) => {
  
   
   let { party_id, machine_ids, fabric_id, gsm, order_quantity, yarns } = req.body;
@@ -133,7 +134,7 @@ if (!Array.isArray(machine_ids) || machine_ids.length === 0) {
 
 
 /* ================= JOB LIST (SUMMARY PAGE) ================= */
-router.get("/", async (req, res) => {
+router.get("/", authMiddleware, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT
@@ -195,7 +196,7 @@ router.get("/", async (req, res) => {
 
 
 /* ================= CLOSE JOB ================= */
-router.put("/close/:job_no", async (req, res) => {
+router.put("/close/:job_no", authMiddleware, adminOnly, async (req, res) => {
   try {
     const { job_no } = req.params;
 
@@ -229,11 +230,142 @@ router.put("/close/:job_no", async (req, res) => {
   }
 });
 
+/* ================= JOB YARN HISTORY ================= */
+router.get("/:job_no/yarn-history", authMiddleware, async (req, res) => {
+  try {
+    const { job_no } = req.params;
 
+    const result = await pool.query(`
+      SELECT
+        y.transaction_type,
+        y.quantity,
+        y.created_at,
+        yl.lot_no,
+        ym.yarn_name,
+        y.remarks
+      FROM yarn_ledger y
+      JOIN yarn_lot yl ON y.yarn_lot_id = yl.id
+      JOIN yarn_master ym ON yl.yarn_id = ym.id
+      JOIN job_orders j ON y.job_id = j.id
+      WHERE j.job_no = $1
+      ORDER BY y.created_at DESC
+    `, [job_no]);
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error("❌ YARN HISTORY ERROR:", err);
+    res.status(500).json({ error: "Failed to load yarn history" });
+  }
+});
+
+/* ================= JOB PRODUCTION HISTORY ================= */
+router.get("/:job_no/production-history", async (req, res) => {
+  try {
+    const { job_no } = req.params;
+
+    const result = await pool.query(`
+      SELECT
+        roll_no,
+        quantity,
+        created_at
+      FROM fabric_production fp
+      JOIN job_orders j ON fp.job_id = j.id
+      WHERE j.job_no = $1
+      ORDER BY created_at DESC
+    `, [job_no]);
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error("❌ PRODUCTION HISTORY ERROR:", err);
+    res.status(500).json({ error: "Failed to load production history" });
+  }
+});
+
+/* ================= JOB DISPATCH HISTORY ================= */
+
+router.get("/:job_no/dispatch-history", authMiddleware, async (req, res) => {
+
+  try {
+
+    const { job_no } = req.params;
+
+    const result = await pool.query(`
+      SELECT
+        roll_no,
+        quantity,
+        dispatched_at
+      FROM fabric_dispatch fd
+      JOIN job_orders j ON fd.job_id = j.id
+      WHERE j.job_no = $1
+      ORDER BY dispatched_at DESC
+    `, [job_no]);
+
+    res.json(result.rows);
+
+  } catch (err) {
+
+    console.error("❌ DISPATCH HISTORY ERROR:", err);
+
+    res.status(500).json({
+      error: "Failed to load dispatch history"
+    });
+
+  }
+
+});
+
+router.get("/details/:id", async (req, res) => {
+
+  try {
+
+    const id = parseInt(req.params.id);
+
+    const job = await pool.query(
+      `SELECT * FROM job_orders WHERE id=$1`,
+      [id]
+    );
+
+    if (job.rowCount === 0) {
+      return res.status(404).json({ error: "Job not found" });
+    }
+
+    const machines = await pool.query(
+      `SELECT machine_id FROM job_machines WHERE job_id=$1`,
+      [id]
+    );
+
+    const yarns = await pool.query(
+      `SELECT yarn_id FROM job_yarns WHERE job_id=$1`,
+      [id]
+    );
+
+    let machineList = machines.rows.map(m => m.machine_id);
+
+    /* fallback if job_machines empty */
+    if (machineList.length === 0 && job.rows[0].machine_id) {
+      machineList = [job.rows[0].machine_id];
+    }
+
+    res.json({
+      ...job.rows[0],
+      machines: machineList,
+      yarns: yarns.rows
+    });
+
+  } catch (err) {
+
+    console.error("❌ JOB DETAILS ERROR:", err);
+    res.status(500).json({ error: "Failed to load job details" });
+
+  }
+
+});
 
 
 /* ================= SINGLE JOB DETAIL ================= */
-router.get("/:job_no", async (req, res) => {
+router.get("/:job_no", authMiddleware, async (req, res) => {
   try {
     const { job_no } = req.params;
 
@@ -323,142 +455,105 @@ router.get("/:job_no", async (req, res) => {
     res.status(500).json({ error: "Failed to load job detail" });
   }
 });
-/* ================= JOB YARN HISTORY ================= */
-router.get("/:job_no/yarn-history", async (req, res) => {
-  try {
-    const { job_no } = req.params;
 
-    const result = await pool.query(`
-      SELECT
-        y.transaction_type,
-        y.quantity,
-        y.created_at,
-        yl.lot_no,
-        ym.yarn_name,
-        y.remarks
-      FROM yarn_ledger y
-      JOIN yarn_lot yl ON y.yarn_lot_id = yl.id
-      JOIN yarn_master ym ON yl.yarn_id = ym.id
-      JOIN job_orders j ON y.job_id = j.id
-      WHERE j.job_no = $1
-      ORDER BY y.created_at DESC
-    `, [job_no]);
 
-    res.json(result.rows);
+/* ================= CHANGE MACHINE ================= */
 
-  } catch (err) {
-    console.error("❌ YARN HISTORY ERROR:", err);
-    res.status(500).json({ error: "Failed to load yarn history" });
-  }
-});
+router.put("/change-machine/:job_id", async (req, res) => {
 
-/* ================= JOB PRODUCTION HISTORY ================= */
-router.get("/:job_no/production-history", async (req, res) => {
-  try {
-    const { job_no } = req.params;
+  const jobId = req.params.job_id;
+  const { new_machine_id } = req.body;
 
-    const result = await pool.query(`
-      SELECT
-        roll_no,
-        quantity,
-        created_at
-      FROM fabric_production fp
-      JOIN job_orders j ON fp.job_id = j.id
-      WHERE j.job_no = $1
-      ORDER BY created_at DESC
-    `, [job_no]);
-
-    res.json(result.rows);
-
-  } catch (err) {
-    console.error("❌ PRODUCTION HISTORY ERROR:", err);
-    res.status(500).json({ error: "Failed to load production history" });
-  }
-});
-
-/* ================= JOB DISPATCH HISTORY ================= */
-
-router.get("/:job_no/dispatch-history", async (req, res) => {
+  const client = await pool.connect();
 
   try {
 
-    const { job_no } = req.params;
+    await client.query("BEGIN");
 
-    const result = await pool.query(`
-      SELECT
-        roll_no,
-        quantity,
-        dispatched_at
-      FROM fabric_dispatch fd
-      JOIN job_orders j ON fd.job_id = j.id
-      WHERE j.job_no = $1
-      ORDER BY dispatched_at DESC
-    `, [job_no]);
-
-    res.json(result.rows);
-
-  } catch (err) {
-
-    console.error("❌ DISPATCH HISTORY ERROR:", err);
-
-    res.status(500).json({
-      error: "Failed to load dispatch history"
-    });
-
-  }
-
-});
-
-router.get("/details/:id", async (req, res) => {
-
-  try {
-
-    const id = parseInt(req.params.id);
-
-    const job = await pool.query(
-      `SELECT * FROM job_orders WHERE id=$1`,
-      [id]
+    const job = await client.query(
+      `SELECT machine_id FROM job_orders WHERE id=$1`,
+      [jobId]
     );
 
     if (job.rowCount === 0) {
-      return res.status(404).json({ error: "Job not found" });
+      throw new Error("Job not found");
     }
 
-    const machines = await pool.query(
-      `SELECT machine_id FROM job_machines WHERE job_id=$1`,
-      [id]
+    const oldMachine = job.rows[0].machine_id;
+
+    /* update job */
+    await client.query(
+      `UPDATE job_orders SET machine_id=$1 WHERE id=$2`,
+      [new_machine_id, jobId]
     );
 
-    const yarns = await pool.query(
-      `SELECT yarn_id FROM job_yarns WHERE job_id=$1`,
-      [id]
+    /* machine status */
+    await client.query(
+      `UPDATE machines SET status='IDLE' WHERE id=$1`,
+      [oldMachine]
     );
 
-    let machineList = machines.rows.map(m => m.machine_id);
+    await client.query(
+      `UPDATE machines SET status='RUNNING' WHERE id=$1`,
+      [new_machine_id]
+    );
 
-    /* fallback if job_machines empty */
-    if (machineList.length === 0 && job.rows[0].machine_id) {
-      machineList = [job.rows[0].machine_id];
-    }
-
+    await client.query("COMMIT");
     res.json({
-      ...job.rows[0],
-      machines: machineList,
-      yarns: yarns.rows
+      success: true
     });
 
   } catch (err) {
-
-    console.error("❌ JOB DETAILS ERROR:", err);
-    res.status(500).json({ error: "Failed to load job details" });
-
+    await client.query("ROLLBACK");
+    console.error("❌ CHANGE MACHINE ERROR:", err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
   }
+});
+/* ================= Yarn Issues to machine ================= */
+router.get("/:job_id/issued-yarns", async (req, res) => {
+  const { job_id } = req.params;
 
+  try {
+    const result = await pool.query(
+      `
+      SELECT 
+  yl.id AS yarn_lot_id,
+  yl.lot_no,
+  ym.yarn_name,
+
+  jo.order_quantity -
+  COALESCE(fp.total_produced, 0) AS balance
+
+FROM job_orders jo
+
+LEFT JOIN (
+  SELECT job_id, SUM(quantity) AS total_produced
+  FROM fabric_production
+  GROUP BY job_id
+) fp ON fp.job_id = jo.id
+
+JOIN job_yarns jy ON jy.job_id = jo.id
+JOIN yarn_master ym ON ym.id = jy.yarn_id
+JOIN yarn_lot yl ON yl.yarn_id = jy.yarn_id
+
+WHERE jo.id = $1
+      `,
+      [job_id]
+    );
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error("ISSUED YARN FETCH ERROR:", err);
+    res.status(500).json({ error: "Failed to load yarns" });
+  }
 });
 
 /* ================= UPDATE JOB ================= */
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", authMiddleware, adminOnly, async (req, res) => {
 
   const jobId = req.params.id;
 
@@ -578,99 +673,4 @@ router.put("/:id", async (req, res) => {
   }
 
 });
-
-/* ================= CHANGE MACHINE ================= */
-
-router.put("/change-machine/:job_id", async (req, res) => {
-
-  const jobId = req.params.job_id;
-  const { new_machine_id } = req.body;
-
-  const client = await pool.connect();
-
-  try {
-
-    await client.query("BEGIN");
-
-    const job = await client.query(
-      `SELECT machine_id FROM job_orders WHERE id=$1`,
-      [jobId]
-    );
-
-    if (job.rowCount === 0) {
-      throw new Error("Job not found");
-    }
-
-    const oldMachine = job.rows[0].machine_id;
-
-    /* update job */
-    await client.query(
-      `UPDATE job_orders SET machine_id=$1 WHERE id=$2`,
-      [new_machine_id, jobId]
-    );
-
-    /* machine status */
-    await client.query(
-      `UPDATE machines SET status='IDLE' WHERE id=$1`,
-      [oldMachine]
-    );
-
-    await client.query(
-      `UPDATE machines SET status='RUNNING' WHERE id=$1`,
-      [new_machine_id]
-    );
-
-    await client.query("COMMIT");
-    res.json({
-      success: true
-    });
-
-  } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("❌ CHANGE MACHINE ERROR:", err);
-    res.status(500).json({ error: err.message });
-  } finally {
-    client.release();
-  }
-});
-/* ================= Yarn Issues to machine ================= */
-router.get("/:job_id/issued-yarns", async (req, res) => {
-  const { job_id } = req.params;
-
-  try {
-    const result = await pool.query(
-      `
-      SELECT 
-  yl.id AS yarn_lot_id,
-  yl.lot_no,
-  ym.yarn_name,
-
-  jo.order_quantity -
-  COALESCE(fp.total_produced, 0) AS balance
-
-FROM job_orders jo
-
-LEFT JOIN (
-  SELECT job_id, SUM(quantity) AS total_produced
-  FROM fabric_production
-  GROUP BY job_id
-) fp ON fp.job_id = jo.id
-
-JOIN job_yarns jy ON jy.job_id = jo.id
-JOIN yarn_master ym ON ym.id = jy.yarn_id
-JOIN yarn_lot yl ON yl.yarn_id = jy.yarn_id
-
-WHERE jo.id = $1
-      `,
-      [job_id]
-    );
-
-    res.json(result.rows);
-
-  } catch (err) {
-    console.error("ISSUED YARN FETCH ERROR:", err);
-    res.status(500).json({ error: "Failed to load yarns" });
-  }
-});
-
 export default router;
