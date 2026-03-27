@@ -274,14 +274,13 @@ Widget _sortTile(String title, String value) {
         ],
       ),
 
-      floatingActionButton: FloatingActionButton(
-        
+     
+        floatingActionButton: FloatingActionButton(
         tooltip: "Create Job",
         onPressed: () =>
             _navigateAndRefresh(const CreateJobScreen()),
         child: const Icon(Icons.add),
-      )
-    : null,
+      ),
 
       body: FutureBuilder<List<dynamic>>(
         future: _jobsFuture,

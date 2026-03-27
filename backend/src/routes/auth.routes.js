@@ -33,7 +33,6 @@ const result = await pool.query(
 [username]
 );
 
-```
 if (result.rows.length === 0) {
   return res.json({ success: false, message: "User not found" });
 }
@@ -67,7 +66,7 @@ res.json({
     permissions,
   },
 });
-```
+
 
 } catch (err) {
 console.error(err);
