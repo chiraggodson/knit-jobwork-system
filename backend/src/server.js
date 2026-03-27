@@ -14,7 +14,7 @@ async function startServer() {
       console.log("=================================");
       console.log("🚀 BBJOMS Started");
       console.log(`🌐 Server: http://localhost:${PORT}`);
-      console.log(`🌐 LAN Access: 192.168.1.31:${PORT}`);
+      console.log(`🌐 LAN Access: http://192.168.29.6:${PORT}`);
       console.log("=================================");
     });
   } catch (error) {

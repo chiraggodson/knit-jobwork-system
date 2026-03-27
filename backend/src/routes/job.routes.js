@@ -1,5 +1,5 @@
 console.log("✅ job.routes.js LOADED");
-import { authMiddleware, adminOnly } from "../middleware/auth.js";
+
 
 import express from "express";
 import { pool } from "../db.js";
@@ -25,7 +25,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-router.post("/", authMiddleware, adminOnly, upload.single("image"), async (req, res) => {
+router.post("/",  upload.single("image"), async (req, res) => {
  
   
   let { party_id, machine_ids, fabric_id, gsm, order_quantity, yarns } = req.body;
@@ -134,7 +134,7 @@ if (!Array.isArray(machine_ids) || machine_ids.length === 0) {
 
 
 /* ================= JOB LIST (SUMMARY PAGE) ================= */
-router.get("/", authMiddleware, async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT
@@ -196,7 +196,7 @@ router.get("/", authMiddleware, async (req, res) => {
 
 
 /* ================= CLOSE JOB ================= */
-router.put("/close/:job_no", authMiddleware, adminOnly, async (req, res) => {
+router.put("/close/:job_no",   async (req, res) => {
   try {
     const { job_no } = req.params;
 
@@ -231,7 +231,7 @@ router.put("/close/:job_no", authMiddleware, adminOnly, async (req, res) => {
 });
 
 /* ================= JOB YARN HISTORY ================= */
-router.get("/:job_no/yarn-history", authMiddleware, async (req, res) => {
+router.get("/:job_no/yarn-history", async (req, res) => {
   try {
     const { job_no } = req.params;
 
@@ -285,7 +285,7 @@ router.get("/:job_no/production-history", async (req, res) => {
 
 /* ================= JOB DISPATCH HISTORY ================= */
 
-router.get("/:job_no/dispatch-history", authMiddleware, async (req, res) => {
+router.get("/:job_no/dispatch-history",  async (req, res) => {
 
   try {
 
@@ -365,7 +365,7 @@ router.get("/details/:id", async (req, res) => {
 
 
 /* ================= SINGLE JOB DETAIL ================= */
-router.get("/:job_no", authMiddleware, async (req, res) => {
+router.get("/:job_no", async (req, res) => {
   try {
     const { job_no } = req.params;
 
@@ -553,7 +553,7 @@ WHERE jo.id = $1
 
 /* ================= UPDATE JOB ================= */
 
-router.put("/:id", authMiddleware, adminOnly, async (req, res) => {
+router.put("/:id", async (req, res) => {
 
   const jobId = req.params.id;
 
@@ -619,9 +619,7 @@ router.put("/:id", authMiddleware, adminOnly, async (req, res) => {
           `,
           [jobId, machineId]
         );
-
       }
-
     }
 
     /* 3️⃣ Update yarns */
@@ -634,7 +632,6 @@ router.put("/:id", authMiddleware, adminOnly, async (req, res) => {
       );
 
       for (const yarn of yarns) {
-
         await client.query(
           `
           INSERT INTO job_yarns (job_id, yarn_id, percentage)
@@ -646,31 +643,20 @@ router.put("/:id", authMiddleware, adminOnly, async (req, res) => {
             yarn.percentage || null
           ]
         );
-
       }
-
     }
-
     await client.query("COMMIT");
-
     res.json({
       success: true,
       job: result.rows[0]
     });
-
   } catch (err) {
-
     await client.query("ROLLBACK");
-
     console.error("❌ UPDATE JOB ERROR:", err);
-
     res.status(500).json({ error: err.message });
-
   } finally {
-
     client.release();
-
   }
-
 });
+
 export default router;

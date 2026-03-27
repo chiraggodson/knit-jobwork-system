@@ -2,8 +2,10 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+ApiService.token = response['token'];
+
 class ApiService {
-  static const String baseUrl = "http://192.168.1.31:4000";
+  static const String baseUrl = "http://192.168.29.6:4000";
 
 static Future<void> createJob({
   required int partyId,
@@ -44,13 +46,23 @@ static Future<void> createJob({
 }
   /* ================= JOBS ================= */
 
-  static Future<List<dynamic>> getJobs() async {
-    final res = await http.get(Uri.parse("$baseUrl/api/jobs"));
-    if (res.statusCode != 200) {
-      throw Exception("Failed to load jobs");
-    }
-    return jsonDecode(res.body);
+  static String? token; // store globally (temporary)
+
+static Future<List<dynamic>> getJobs() async {
+  final res = await http.get(
+    Uri.parse("$baseUrl/api/jobs"),
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer $token",
+    },
+  );
+
+  if (res.statusCode != 200) {
+    throw Exception("Failed to load jobs: ${res.body}");
   }
+
+  return jsonDecode(res.body);
+}
 
   static Future<Map<String, dynamic>> getJobDetail(String jobNo) async {
     final res = await http.get(Uri.parse("$baseUrl/api/jobs/$jobNo"));
