@@ -2,10 +2,10 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-ApiService.token = response['token'];
+
 
 class ApiService {
-  static const String baseUrl = "http://192.168.29.6:4000";
+  static const baseUrl = "http://192.168.29.6:4000";
 
 static Future<void> createJob({
   required int partyId,
@@ -46,14 +46,13 @@ static Future<void> createJob({
 }
   /* ================= JOBS ================= */
 
-  static String? token; // store globally (temporary)
+  
 
 static Future<List<dynamic>> getJobs() async {
   final res = await http.get(
     Uri.parse("$baseUrl/api/jobs"),
     headers: {
       "Content-Type": "application/json",
-      "Authorization": "Bearer $token",
     },
   );
 

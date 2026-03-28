@@ -63,28 +63,7 @@ Widget _bigPercent(int percent) {
   );
 }
 
-Widget _smallMetric(String label, String value) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        value,
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
-        ),
-      ),
-      const SizedBox(height: 4),
-      Text(
-        label,
-        style: const TextStyle(
-          fontSize: 12,
-          color: Colors.grey,
-        ),
-      ),
-    ],
-  );
-}
+
 class _JobReportScreenState extends State<JobReportScreen> {
   
 Widget _smallMetric(String label, String value) {
