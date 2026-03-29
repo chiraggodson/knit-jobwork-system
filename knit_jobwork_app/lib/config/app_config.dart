@@ -24,7 +24,7 @@ class AppConfig {
 
   static Future<void> load() async {
     // temporary config loader
-    requireLogin = true;
+    requireLogin = false;
   }
 
   static Future<void> setRequireLogin(bool value) async {
