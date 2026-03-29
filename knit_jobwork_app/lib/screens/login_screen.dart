@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dashboard_screen.dart';
-
 import '../models/user_session.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:knit_jobwork_app/services/api_service.dart';
-import '../models/user_session.dart';
+
+
 
 
 class LoginScreen extends StatefulWidget {
@@ -45,16 +45,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
         final role = data["user"]["role"];
 
-final session = UserSession(
-role: data["user"]["role"],
-permissions: List<String>.from(data["user"]["permissions"] ?? []),
+UserSession.current = UserSession(
+  role: "admin",
+  permissions: ["ALL"],
 );
 
 Navigator.pushReplacement(
-context,
-MaterialPageRoute(
-builder: (_) => Dashboard(session: session),
-),
+  context,
+  MaterialPageRoute(
+    builder: (_) => const Dashboard(),
+  ),
 );
 
 
