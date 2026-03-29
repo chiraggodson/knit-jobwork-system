@@ -1,29 +1,65 @@
-# Knit Jobwork ERP System
+# 🧵 Knit Jobwork Management System
 
-Private ERP system for textile knitting factory operations.
+A real-world production system built to digitize operations in textile factories.
 
-## Modules
-- Machine status dashboard
-- Jobwork management
-- Fabric tracking
-- Production monitoring
-- Yarn management
 
-## Tech Stack
+## 🚀 What This System Does
 
-Backend
-- Node.js
-- Express
-- PostgreSQL
-- TypeORM
+This system helps knitting factories manage:
 
-Frontend
-- Flutter (Windows / Android / iOS)
+* Machine operations
+* Yarn inventory & ledger
+* Party & order tracking
+* Production workflow
 
-## Project Structure
 
-backend/ → API server  
-flutter_app/ → ERP client application
+## 🔥 Core Features
 
-## Author
-Chirag Sandhir
+### 🏭 Machine Management
+
+* Live machine status (Running, Cleaning, Stopped)
+* Admin-controlled updates
+
+### 🧶 Yarn Ledger
+
+* Inward entries
+* Yarn issued to machines
+* Yarn returns
+* Running balance per lot
+
+### 👥 Party Management
+
+* Track orders per party
+* Fabric & production details
+
+### 🔐 Access Control
+
+* Admin vs User roles
+
+## 🏗 System Architecture
+
+* **Frontend:** Flutter (Windows, Android, iOS)
+* **Backend:** Node.js + Express
+* **Database:** PostgreSQL
+
+
+## 🧠 Why This Project Exists
+
+Most small textile factories rely on manual registers or Excel.
+
+This system replaces that with a structured, real-time digital solution.
+
+
+## 📌 Current Status
+
+🚧 Actively in development
+
+
+## 📸 Screenshots
+
+(Coming soon)
+
+
+## ⚙️ Setup
+
+(Will be documented after backend stabilization)
