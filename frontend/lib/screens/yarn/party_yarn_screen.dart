@@ -6,6 +6,7 @@ import '../party/party_inward_list_screen.dart';
 
 class PartyYarnScreen extends StatelessWidget {
   const PartyYarnScreen({super.key});
+  
 
   // 🔘 Bottom Sheet Actions
   void _showActions(BuildContext context) {
@@ -64,7 +65,7 @@ class PartyYarnScreen extends StatelessWidget {
       appBar: AppBar(title: const Text("Party Yarn Ledger")),
 
       body: FutureBuilder(
-        future: ApiService.getPartyLedger(),
+        future: ApiService.getParties(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -84,12 +85,10 @@ class PartyYarnScreen extends StatelessWidget {
             itemCount: data.length,
             itemBuilder: (context, index) {
               final p = data[index];
+              print(p);
 
               // ✅ Safe number parsing
-              final inward = double.tryParse(p['yarn_inward'].toString()) ?? 0;
-              final issued = double.tryParse(p['yarn_issued'].toString()) ?? 0;
-              final balance = double.tryParse(p['balance'].toString()) ?? 0;
-
+              final balance = double.tryParse(p['balance']?.toString() ?? "0") ?? 0;
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 elevation: 2,
@@ -115,24 +114,19 @@ class PartyYarnScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          p['party_name'],
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        Text(p['name']?.toString() ?? "Unknown Party"),
+                        
                         const SizedBox(height: 8),
 
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text("Inward: $inward kg"),
-                            Text("Issued: $issued kg"),
+                            Text("Balance: $balance kg"),
                           ],
                         ),
 
                         const SizedBox(height: 6),
+
 
                         Text(
                           "Balance: $balance kg",

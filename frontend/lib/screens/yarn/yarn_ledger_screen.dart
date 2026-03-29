@@ -5,7 +5,7 @@ import 'package:knit_jobwork_app/services/api_service.dart';
 
 class YarnLedgerScreen extends StatefulWidget {
 final int partyId;
-final String partyName; // ✅ add this
+final String partyName;
 final DateTime fromDate;
 final DateTime toDate;
 
@@ -16,7 +16,7 @@ final String? lot;
 const YarnLedgerScreen({
 super.key,
 required this.partyId,
-required this.partyName, // ✅ fixed
+required this.partyName,
 required this.fromDate,
 required this.toDate,
 this.yarn,
@@ -42,16 +42,43 @@ Future<void> fetchLedger() async {
 setState(() => loading = true);
 
 
-final uri = Uri.parse(
-  "${ApiService.baseUrl}/api/yarn/ledger-report/${widget.partyId}",
-);
+try {
+  final uri = Uri.parse(
+    "${ApiService.baseUrl}/api/yarn/ledger-report/${widget.partyId}",
+  );
 
-final res = await http.get(uri);
+  final res = await http.get(uri);
 
-setState(() {
-  ledger = jsonDecode(res.body);
-  loading = false;
-});
+  print("STATUS: ${res.statusCode}");
+  print("BODY: ${res.body}");
+
+  if (res.statusCode == 200) {
+    final data = jsonDecode(res.body);
+
+    if (data is List) {
+      setState(() {
+        ledger = data;
+        loading = false;
+      });
+    } else {
+      throw Exception("Response is not a List");
+    }
+  } else {
+    throw Exception("Server error ${res.statusCode}");
+  }
+} catch (e) {
+  print("LEDGER ERROR: $e");
+
+  setState(() {
+    ledger = [];
+    loading = false;
+  });
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text("Failed to load ledger")),
+  );
+}
+
 
 }
 
@@ -60,11 +87,16 @@ if (val == null) return 0;
 return double.tryParse(val.toString()) ?? 0;
 }
 
+String formatDate(dynamic date) {
+if (date == null) return "";
+return date.toString().split('T')[0];
+}
+
 @override
 Widget build(BuildContext context) {
 return Scaffold(
 appBar: AppBar(
-title: Text("Ledger - ${widget.partyName}"), // ✅ fixed
+title: Text("Ledger - ${widget.partyName}"),
 ),
 body: Column(
 children: [
@@ -102,14 +134,14 @@ const SizedBox(height: 10),
                             issued + waste + partyReturn + setting;
 
                         return DataRow(cells: [
-                          DataCell(Text(row['date'] ?? "")),
-                          DataCell(Text(row['challan_no'] ?? "")),
-                          DataCell(Text(row['yarn_name'] ?? "")),
-                          DataCell(Text(row['lot_no'] ?? "")),
+                          DataCell(Text(formatDate(row['date']))),
+                          DataCell(Text(row['challan_no']?.toString() ?? "")),
+                          DataCell(Text(row['yarn_name']?.toString() ?? "")),
+                          DataCell(Text(row['lot_no']?.toString() ?? "")),
                           DataCell(Text(totalIn.toString())),
                           DataCell(Text(totalOut.toString())),
                           DataCell(Text(
-                              (row['running_balance'] ?? 0).toString())),
+                              row['running_balance']?.toString() ?? "0")),
                         ]);
                       }).toList(),
                     ),

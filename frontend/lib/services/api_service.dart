@@ -185,7 +185,7 @@ static Future updateJob({
   
     /* ================= YARN Party Ledger ================= */
 static Future<List<dynamic>> getPartyLedger() async {
-  final res = await http.get(Uri.parse("$baseUrl/api/yarn/party-ledger"));
+  final res = await http.get(Uri.parse("$baseUrl/api/yarn/yarn-ledger"));
 
   if (res.statusCode != 200) {
     throw Exception("Failed to load party ledger");

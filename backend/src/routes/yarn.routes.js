@@ -319,6 +319,29 @@ console.error("❌ LEDGER REPORT ERROR:", err);
 res.status(500).json({ error: "Failed to generate ledger report" });
 }
 });
+router.get("/party-summary", async (req, res) => {
+  const result = await pool.query(`
+    SELECT 
+      p.id,
+      p.name,
+
+      COALESCE(SUM(
+        CASE
+          WHEN y.transaction_type IN ('inward','return') THEN y.quantity
+          WHEN y.transaction_type IN ('issue','waste','party_return','setting') THEN -y.quantity
+        END
+      ),0)::float AS balance
+
+    FROM parties p
+    LEFT JOIN yarn_lot yl ON yl.party_id = p.id
+    LEFT JOIN yarn_ledger y ON y.yarn_lot_id = yl.id
+
+    GROUP BY p.id, p.name
+    ORDER BY p.name;
+  `);
+
+  res.json(result.rows);
+});
 
 
 export default router;
