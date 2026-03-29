@@ -1,6 +1,9 @@
 # ==============================
+
 # NODE / BACKEND
+
 # ==============================
+
 node_modules/
 backend/node_modules/
 
@@ -8,7 +11,6 @@ backend/node_modules/
 .env.*
 
 dist/
-build/
 coverage/
 
 npm-debug.log*
@@ -17,44 +19,62 @@ yarn-error.log*
 pnpm-debug.log*
 
 # ==============================
-# FLUTTER
+
+# FLUTTER / FRONTEND
+
 # ==============================
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
-.pub-cache/
-.pub/
+
+frontend/.dart_tool/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/.packages
+frontend/.pub-cache/
+frontend/.pub/
 
 # Flutter build outputs
-build/
-knit_jobwork_app/build/
+
+frontend/build/
 
 # Flutter generated
+
 **/generated_plugin_registrant.*
 
 # ==============================
+
 # IDE / EDITOR
+
 # ==============================
+
 .vscode/
 .idea/
 *.iml
 
 # ==============================
+
 # OS FILES
+
 # ==============================
+
 .DS_Store
 Thumbs.db
 desktop.ini
 
 # ==============================
+
 # TEMP FILES
+
 # ==============================
+
 *.log
 *.tmp
 *.swp
 
 # ==============================
-# ZIP FILES (avoid accidental commits)
+
+# ARCHIVES
+
 # ==============================
+
 *.zip
+*.rar
+*.7z
