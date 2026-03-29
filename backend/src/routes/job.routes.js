@@ -379,19 +379,19 @@ router.get("/:job_no", async (req, res) => {
         COALESCE((
           SELECT SUM(quantity)
           FROM yarn_ledger
-          WHERE job_id = j.id AND transaction_type = 'ISSUE'
+          WHERE job_id = j.id AND transaction_type = 'issue'
         ),0)::float AS yarn_issued,
 
         COALESCE((
           SELECT SUM(quantity)
           FROM yarn_ledger
-          WHERE job_id = j.id AND transaction_type = 'RETURN'
+          WHERE job_id = j.id AND transaction_type = 'return'
         ),0)::float AS yarn_returned,
 
         COALESCE((
           SELECT SUM(quantity)
           FROM yarn_ledger
-          WHERE job_id = j.id AND transaction_type = 'WASTE'
+          WHERE job_id = j.id AND transaction_type = 'waste'
         ),0)::float AS waste,
 
         COALESCE((
@@ -427,9 +427,9 @@ router.get("/:job_no", async (req, res) => {
 
         COALESCE(SUM(
           CASE 
-          WHEN yl.transaction_type = 'ISSUE' THEN yl.quantity
-          WHEN yl.transaction_type = 'RETURN' THEN -yl.quantity
-          WHEN yl.transaction_type = 'SETTING' THEN -yl.quantity  -- 🔥 important
+          WHEN yl.transaction_type = 'issue' THEN yl.quantity
+          WHEN yl.transaction_type = 'return' THEN -yl.quantity
+          WHEN yl.transaction_type = 'setting' THEN -yl.quantity  -- 🔥 important
           ELSE 0
         END
         ), 0) AS issued

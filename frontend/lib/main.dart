@@ -1,14 +1,14 @@
 import 'config/app_config.dart';
 import 'models/user_session.dart';
-import 'screens/reports_screen.dart';
-import 'screens/machine_screen.dart';
 import 'package:flutter/material.dart';
-import 'screens/party_yarn_screen.dart';
-import 'screens/job_summary_screen.dart';
-import 'screens/dashboard_home_screen.dart';
-import 'screens/product_manager_screen.dart';
-import 'screens/dashboard_screen.dart'; // ✅ ADD THIS
-import 'package:knit_jobwork_app/screens/login_screen.dart';
+import 'screens/job/job_summary_screen.dart';
+import 'screens/reports/reports_screen.dart';
+import 'screens/machine/machine_screen.dart';
+import 'screens/yarn/party_yarn_screen.dart';
+import 'screens/admin/product_manager_screen.dart';
+import 'screens/dashboard/dashboard_home_screen.dart';
+import 'screens/dashboard/dashboard_screen.dart'; // ✅ ADD THIS
+import 'package:knit_jobwork_app/screens/auth/login_screen.dart';
 
 
 void main() async {
