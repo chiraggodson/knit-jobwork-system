@@ -4,112 +4,121 @@ import 'package:http/http.dart' as http;
 import 'package:knit_jobwork_app/services/api_service.dart';
 
 class YarnLedgerScreen extends StatefulWidget {
-  final String party;
-  final DateTime fromDate;
-  final DateTime toDate;
+final int partyId;
+final String partyName; // ✅ add this
+final DateTime fromDate;
+final DateTime toDate;
 
-  final String? yarn;
-  final String? color;
-  final String? lot;
+final String? yarn;
+final String? color;
+final String? lot;
 
-  const YarnLedgerScreen({
-    super.key,
-    required this.party,
-    required this.fromDate,
-    required this.toDate,
-    this.yarn,
-    this.color,
-    this.lot,
-  });
+const YarnLedgerScreen({
+super.key,
+required this.partyId,
+required this.partyName, // ✅ fixed
+required this.fromDate,
+required this.toDate,
+this.yarn,
+this.color,
+this.lot,
+});
 
-  @override
-  State<YarnLedgerScreen> createState() => _YarnLedgerScreenState();
+@override
+State<YarnLedgerScreen> createState() => _YarnLedgerScreenState();
 }
 
 class _YarnLedgerScreenState extends State<YarnLedgerScreen> {
-  List ledger = [];
-  bool loading = false;
+List ledger = [];
+bool loading = false;
 
-  @override
-  void initState() {
-    super.initState();
-    fetchLedger();
-  }
+@override
+void initState() {
+super.initState();
+fetchLedger();
+}
 
-  Future<void> fetchLedger() async {
-    setState(() => loading = true);
-    
-    final uri = Uri.parse(
-      "${ApiService.baseUrl}/api/yarn/ledger-report"
-      "?party=${widget.party}"
-      "&from=${widget.fromDate.toIso8601String()}"
-      "&to=${widget.toDate.toIso8601String()}"
-      "&yarn=${widget.yarn ?? ''}"
-      "&color=${widget.color ?? ''}"
-      "&lot=${widget.lot ?? ''}",
-    );
+Future<void> fetchLedger() async {
+setState(() => loading = true);
 
-    final res = await http.get(uri);
 
-    setState(() {
-      ledger = jsonDecode(res.body);
-      loading = false;
-    });
-  }
+final uri = Uri.parse(
+  "${ApiService.baseUrl}/api/yarn/ledger-report/${widget.partyId}",
+);
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Ledger - ${widget.party}"),
+final res = await http.get(uri);
+
+setState(() {
+  ledger = jsonDecode(res.body);
+  loading = false;
+});
+
+}
+
+double parseNum(dynamic val) {
+if (val == null) return 0;
+return double.tryParse(val.toString()) ?? 0;
+}
+
+@override
+Widget build(BuildContext context) {
+return Scaffold(
+appBar: AppBar(
+title: Text("Ledger - ${widget.partyName}"), // ✅ fixed
+),
+body: Column(
+children: [
+const SizedBox(height: 10),
+
+
+      Expanded(
+        child: loading
+            ? const Center(child: CircularProgressIndicator())
+            : ledger.isEmpty
+                ? const Center(child: Text("No Data"))
+                : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: DataTable(
+                      columns: const [
+                        DataColumn(label: Text("Date")),
+                        DataColumn(label: Text("Challan")),
+                        DataColumn(label: Text("Yarn")),
+                        DataColumn(label: Text("Lot")),
+                        DataColumn(label: Text("In")),
+                        DataColumn(label: Text("Out")),
+                        DataColumn(label: Text("Balance")),
+                      ],
+                      rows: ledger.map<DataRow>((row) {
+                        final inward = parseNum(row['inward']);
+                        final returned = parseNum(row['returned']);
+
+                        final issued = parseNum(row['issued']);
+                        final waste = parseNum(row['waste']);
+                        final partyReturn = parseNum(row['party_return']);
+                        final setting = parseNum(row['setting']);
+
+                        final totalIn = inward + returned;
+                        final totalOut =
+                            issued + waste + partyReturn + setting;
+
+                        return DataRow(cells: [
+                          DataCell(Text(row['date'] ?? "")),
+                          DataCell(Text(row['challan_no'] ?? "")),
+                          DataCell(Text(row['yarn_name'] ?? "")),
+                          DataCell(Text(row['lot_no'] ?? "")),
+                          DataCell(Text(totalIn.toString())),
+                          DataCell(Text(totalOut.toString())),
+                          DataCell(Text(
+                              (row['running_balance'] ?? 0).toString())),
+                        ]);
+                      }).toList(),
+                    ),
+                  ),
       ),
-      body: Column(
-        children: [
-          const SizedBox(height: 10),
+    ],
+  ),
+);
 
-          /// 📊 TABLE
-          Expanded(
-            child: loading
-                ? const Center(child: CircularProgressIndicator())
-                : ledger.isEmpty
-                    ? const Center(child: Text("No Data"))
-                    : SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: DataTable(
-                          columns: const [
-                            DataColumn(label: Text("Date")),
-                            DataColumn(label: Text("Challan")),
-                            DataColumn(label: Text("Yarn")),
-                            DataColumn(label: Text("Lot")),
-                            DataColumn(label: Text("In")),
-                            DataColumn(label: Text("Out")),
-                            DataColumn(label: Text("Balance")),
-                          ],
-                          rows: ledger.map<DataRow>((row) {
-                            return DataRow(cells: [
-                              DataCell(Text(row['date'] ?? "")),
-                              DataCell(Text(row['challan_no'] ?? "")),
-                              DataCell(Text(row['yarn_name'] ?? "")),
-                              DataCell(Text(row['lot_no'] ?? "")),
-                              DataCell(Text(
-                                  (row['inward'] ?? row['returned'] ?? 0)
-                                      .toString())),
-                              DataCell(Text(
-                                  (row['issued'] ??
-                                          row['waste'] ??
-                                          row['party_return'] ??
-                                          row['setting'] ??
-                                          0)
-                                      .toString())),
-                              DataCell(Text(
-                                  (row['running_balance'] ?? 0).toString())),
-                            ]);
-                          }).toList(),
-                        ),
-                      ),
-          ),
-        ],
-      ),
-    );
-  }
+
+}
 }

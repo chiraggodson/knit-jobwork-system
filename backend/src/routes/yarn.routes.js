@@ -4,9 +4,7 @@ import { pool } from "../db.js";
 const router = express.Router();
 
 /*
-
 # HELPER: GET BALANCE
-
 */
 async function getBalance(yarn_lot_id) {
 const result = await pool.query(
