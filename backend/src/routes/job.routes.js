@@ -285,7 +285,7 @@ router.get("/:job_no/production-history", async (req, res) => {
 
 /* ================= JOB DISPATCH HISTORY ================= */
 
-router.get("/:job_no/dispatch-history",  async (req, res) => {
+router.get("/:job_no/dispatch-history", async (req, res) => {
 
   try {
 
@@ -293,13 +293,14 @@ router.get("/:job_no/dispatch-history",  async (req, res) => {
 
     const result = await pool.query(`
       SELECT
-        roll_no,
-        quantity,
-        dispatched_at
+        fd.dispatch_date,
+        fd.challan_no,
+        fd.roll_no,
+        fd.quantity
       FROM fabric_dispatch fd
       JOIN job_orders j ON fd.job_id = j.id
       WHERE j.job_no = $1
-      ORDER BY dispatched_at DESC
+      ORDER BY fd.dispatch_date DESC, fd.id DESC
     `, [job_no]);
 
     res.json(result.rows);
@@ -315,7 +316,6 @@ router.get("/:job_no/dispatch-history",  async (req, res) => {
   }
 
 });
-
 router.get("/details/:id", async (req, res) => {
 
   try {

@@ -9,7 +9,7 @@ import 'screens/admin/product_manager_screen.dart';
 import 'screens/dashboard/dashboard_home_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart'; // ✅ ADD THIS
 import 'package:knit_jobwork_app/screens/auth/login_screen.dart';
-
+import 'screens/dispatch/dispatch_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -86,6 +86,7 @@ class _DashboardState extends State<Dashboard> {
     DashboardHome(),
     JobReportScreen(),
     PartyYarnScreen(),
+    const DispatchScreen(jobId: 0),
     MachineScreen(),
     ProductManagerScreen(),
     ReportsScreen(),
@@ -95,6 +96,7 @@ class _DashboardState extends State<Dashboard> {
   _NavItem(Icons.dashboard, "Dashboard"),
   _NavItem(Icons.factory, "Jobwork"),
   _NavItem(Icons.inventory, "Yarn"),
+  _NavItem(Icons.local_shipping, "Dispatch"), // ✅ ADD THIS
   _NavItem(Icons.precision_manufacturing, "Machines"),
   _NavItem(Icons.category, "Products"),
   _NavItem(Icons.bar_chart, "Reports"),
