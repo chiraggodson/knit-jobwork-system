@@ -370,16 +370,16 @@ static Future bulkProduction(
     return jsonDecode(res.body);
   }
 
-  static Future<List<Map<String, dynamic>>> getYarnLotsByParty(int partyId) async {
-  final res =
-      await http.get(Uri.parse("$baseUrl/api/yarn/stock/$partyId"));
+  static Future<List<dynamic>> getYarnLotsByParty(int partyId) async {
+  final res = await http.get(
+    Uri.parse("$baseUrl/api/yarn/inward/$partyId"),
+  );
 
   if (res.statusCode != 200) {
-    throw Exception("Failed to load yarn lots");
+    throw Exception("Failed to load inward list");
   }
 
-  final data = jsonDecode(res.body);
-  return List<Map<String, dynamic>>.from(data);
+  return jsonDecode(res.body);
 }
 
 
@@ -602,4 +602,6 @@ static Future<void> addSetting({
     throw Exception(res.body);
   }
 }
+
+
 }

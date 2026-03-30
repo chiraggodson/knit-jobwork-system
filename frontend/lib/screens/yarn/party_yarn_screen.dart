@@ -102,8 +102,8 @@ class PartyYarnScreen extends StatelessWidget {
                       MaterialPageRoute(
                         builder: (_) =>
                             PartyInwardListScreen(partyId: 
-                            p['party_id'],
-                            partyName: p['party_name']),
+                            p['id'],
+                            partyName: p['name']),
                             
                       ),
                     );

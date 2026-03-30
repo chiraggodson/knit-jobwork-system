@@ -343,5 +343,47 @@ router.get("/party-summary", async (req, res) => {
   res.json(result.rows);
 });
 
+/*
+# GET YARN INWARD LIST (BY PARTY)
+*/
+router.get("/inward/:party_id", async (req, res) => {
+  const { party_id } = req.params;
 
+  try {
+    const result = await pool.query(
+      `
+      SELECT 
+        yl.id,
+        yl.lot_no,
+        yl.challan_no,
+        yl.inward_date,
+        yl.quantity_received,
+        ym.yarn_name,
+
+        COALESCE(SUM(
+          CASE
+            WHEN y.transaction_type IN ('inward','return') THEN y.quantity
+            WHEN y.transaction_type IN ('issue','waste','party_return','setting') THEN -y.quantity
+          END
+        ),0)::float AS balance
+
+      FROM yarn_lot yl
+      JOIN yarn_master ym ON yl.yarn_id = ym.id
+      LEFT JOIN yarn_ledger y ON yl.id = y.yarn_lot_id
+
+      WHERE yl.party_id = $1
+
+      GROUP BY yl.id, yl.lot_no, yl.challan_no, yl.inward_date, yl.quantity_received, ym.yarn_name
+      ORDER BY yl.id DESC;
+      `,
+      [party_id]
+    );
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error("❌ INWARD FETCH ERROR:", err);
+    res.status(500).json({ error: "Failed to fetch inward list" });
+  }
+});
 export default router;
