@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 
 
 class ApiService {
-  static const baseUrl = "http://192.168.29.6:4000";
+  static const baseUrl = "http://192.168.1.31:4000";
 
 static Future<void> createJob({
   required int partyId,
@@ -193,7 +193,15 @@ static Future<List<dynamic>> getPartyLedger() async {
 
   return jsonDecode(res.body);
 }
+static Future<List<dynamic>> getPartyYarnSummary() async {
+  final res = await http.get(Uri.parse("$baseUrl/api/yarn/party-summary"));
 
+  if (res.statusCode != 200) {
+    throw Exception("Failed to load party summary");
+  }
+
+  return jsonDecode(res.body);
+}
   /* ================= YARN ================= */
 
   static Future<List<dynamic>> getYarnMaster() async {

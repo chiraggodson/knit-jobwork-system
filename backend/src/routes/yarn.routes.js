@@ -271,54 +271,61 @@ res.json(result.rows);
 /* LEDGER REPORT (TALLY STYLE)            */
 
 router.get("/ledger-report/:party_id", async (req, res) => {
-const { party_id } = req.params;
+  const { party_id } = req.params;
 
-try {
-const result = await pool.query(
-`
-SELECT
-y.created_at::date AS date,
-yl.challan_no,
-ym.yarn_name,
-yl.lot_no,
+  try {
+    const result = await pool.query(
+      `
+      SELECT
+        y.created_at::date AS date,
+        yl.challan_no,
+        ym.yarn_name,
+        yl.lot_no,
 
-    CASE WHEN y.transaction_type = 'inward' THEN y.quantity END AS inward,
-    CASE WHEN y.transaction_type = 'issue' THEN y.quantity END AS issued,
-    CASE WHEN y.transaction_type = 'return' THEN y.quantity END AS returned,
-    CASE WHEN y.transaction_type = 'party_return' THEN y.quantity END AS party_return,
-    CASE WHEN y.transaction_type = 'setting' THEN y.quantity END AS setting,
-    CASE WHEN y.transaction_type = 'waste' THEN y.quantity END AS waste,
+        -- IN
+        CASE 
+          WHEN y.transaction_type IN ('inward','return') 
+          THEN y.quantity 
+          ELSE 0 
+        END AS inward,
 
-    SUM(
-      CASE 
-        WHEN y.transaction_type IN ('inward','return') THEN y.quantity
-        WHEN y.transaction_type IN ('issue','waste','party_return','setting') THEN -y.quantity
-      END
-    ) OVER (
-      PARTITION BY yl.id 
-      ORDER BY y.created_at
-    ) AS running_balance
+        -- OUT
+        CASE 
+          WHEN y.transaction_type IN ('issue','waste','party_return','setting') 
+          THEN y.quantity 
+          ELSE 0 
+        END AS outward,
 
-  FROM yarn_ledger y
-  JOIN yarn_lot yl ON y.yarn_lot_id = yl.id
-  JOIN yarn_master ym ON yl.yarn_id = ym.id
-  JOIN parties p ON yl.party_id = p.id
+        -- RUNNING BALANCE (PARTY LEVEL)
+        SUM(
+          CASE 
+            WHEN y.transaction_type IN ('inward','return') THEN y.quantity
+            WHEN y.transaction_type IN ('issue','waste','party_return','setting') THEN -y.quantity
+          END
+        ) OVER (
+          ORDER BY y.created_at, y.id
+        ) AS running_balance
 
-  WHERE p.id = $1
+      FROM yarn_ledger y
+      JOIN yarn_lot yl ON y.yarn_lot_id = yl.id
+      JOIN yarn_master ym ON yl.yarn_id = ym.id
+      JOIN parties p ON yl.party_id = p.id
 
-  ORDER BY y.created_at ASC;
-  `,
-  [party_id]
-);
+      WHERE p.id = $1
 
-res.json(result.rows);
+      ORDER BY y.created_at ASC, y.id ASC;
+      `,
+      [party_id]
+    );
 
+    res.json(result.rows);
 
-} catch (err) {
-console.error("❌ LEDGER REPORT ERROR:", err);
-res.status(500).json({ error: "Failed to generate ledger report" });
-}
+  } catch (err) {
+    console.error("❌ LEDGER REPORT ERROR:", err);
+    res.status(500).json({ error: "Failed to generate ledger report" });
+  }
 });
+
 router.get("/party-summary", async (req, res) => {
   const result = await pool.query(`
     SELECT 
