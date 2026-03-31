@@ -3,6 +3,63 @@ import { pool } from "../db.js";
 
 const router = express.Router();
 
+/* ================= HELPER: GET LOT BALANCE ================= */
+async function getLotBalance(client, lotId) {
+  const res = await client.query(
+    `SELECT COALESCE(SUM(
+      CASE 
+        WHEN transaction_type IN ('inward','return') THEN quantity
+        WHEN transaction_type IN ('issue','waste','party_return','setting') THEN -quantity
+      END
+    ),0) AS balance
+    FROM yarn_ledger
+    WHERE yarn_lot_id = $1`,
+    [lotId]
+  );
+
+  return Number(res.rows[0].balance);
+}
+
+/* ================= HELPER: AUTO DEDUCT FIFO ================= */
+async function autoDeductYarn(client, job_id, qty) {
+
+  let remaining = qty;
+
+  // get all lots for this job's party (FIFO)
+  const lots = await client.query(
+    `SELECT yl.id
+     FROM yarn_lot yl
+     JOIN job_orders j ON j.party_id = yl.party_id
+     WHERE j.id = $1
+     ORDER BY yl.id ASC`,
+    [job_id]
+  );
+
+  for (const lot of lots.rows) {
+
+    if (remaining <= 0) break;
+
+    const balance = await getLotBalance(client, lot.id);
+
+    if (balance <= 0) continue;
+
+    const deduct = Math.min(balance, remaining);
+
+    await client.query(
+      `INSERT INTO yarn_ledger
+       (yarn_lot_id, job_id, transaction_type, quantity, remarks)
+       VALUES ($1,$2,'issue',$3,'Auto from production')`,
+      [lot.id, job_id, deduct]
+    );
+
+    remaining -= deduct;
+  }
+
+  if (remaining > 0) {
+    throw new Error("Not enough yarn stock (FIFO)");
+  }
+}
+
 /* ================= ADD PRODUCTION ================= */
 router.post("/", async (req, res) => {
   const { job_id, roll_no, quantity } = req.body;
@@ -16,33 +73,42 @@ router.post("/", async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    /* 1️⃣ Check job exists */
     const jobCheck = await client.query(
-      `SELECT id, status, order_quantity, machine_id
+      `SELECT id, status, order_quantity, machine_id, issue_mode
        FROM job_orders
        WHERE id = $1`,
       [job_id]
     );
 
-    if (jobCheck.rowCount === 0) {
-      throw new Error("Job not found");
-    }
+    if (jobCheck.rowCount === 0) throw new Error("Job not found");
 
-    if (jobCheck.rows[0].status === "CLOSED") {
-      throw new Error("Job already closed");
-    }
+    const job = jobCheck.rows[0];
 
-    const orderQty = Number(jobCheck.rows[0].order_quantity);
-    const machineId = jobCheck.rows[0].machine_id;
+    if (job.status === "CLOSED") throw new Error("Job already closed");
 
-    /* 2️⃣ Insert production */
-    await client.query(
+    /* 1️⃣ Insert production */
+    const prod = await client.query(
       `INSERT INTO fabric_production (job_id, roll_no, quantity)
-       VALUES ($1, $2, $3)`,
+       VALUES ($1, $2, $3)
+       RETURNING id`,
       [job_id, roll_no, quantity]
     );
 
-    /* 3️⃣ Calculate new total production */
+    const productionId = prod.rows[0].id;
+
+    /* 2️⃣ AUTO ISSUE (ONLY IF AUTO MODE) */
+    if (job.issue_mode === "auto") {
+      await autoDeductYarn(client, job_id, Number(quantity));
+
+      await client.query(
+        `UPDATE fabric_production
+         SET yarn_deducted = true
+         WHERE id = $1`,
+        [productionId]
+      );
+    }
+
+    /* 3️⃣ Calculate totals */
     const totalResult = await client.query(
       `SELECT COALESCE(SUM(quantity),0) AS produced
        FROM fabric_production
@@ -51,11 +117,11 @@ router.post("/", async (req, res) => {
     );
 
     const produced = Number(totalResult.rows[0].produced);
-    const balance = orderQty - produced;
+    const balance = job.order_quantity - produced;
 
     await client.query("COMMIT");
 
-    res.json({ success: true });
+    res.json({ success: true, produced, balance });
 
   } catch (err) {
     await client.query("ROLLBACK");
@@ -66,93 +132,64 @@ router.post("/", async (req, res) => {
   }
 });
 
-
-/* ================= VIEW PRODUCTION ================= */
-router.get("/:job_id", async (req, res) => {
-  const { job_id } = req.params;
-
-  try {
-    const result = await pool.query(
-      `SELECT id, roll_no, quantity, produced_at
-       FROM fabric_production
-       WHERE job_id = $1
-       ORDER BY produced_at`,
-      [job_id]
-    );
-
-    res.json(result.rows);
-  } catch (err) {
-    console.error("VIEW PRODUCTION ERROR:", err);
-    res.status(500).json({ error: "Failed to load production" });
-  }
-});
-
+/* ================= BULK PRODUCTION ================= */
 router.post("/bulk", async (req, res) => {
 
   const { job_id, weights } = req.body;
 
   if (!job_id || !weights || weights.length === 0) {
-    return res.status(400).json({
-      error: "job_id and weights required"
-    });
+    return res.status(400).json({ error: "job_id and weights required" });
   }
 
   const client = await pool.connect();
 
   try {
-
     await client.query("BEGIN");
 
-    /* 1️⃣ Get job info */
-
     const jobRes = await client.query(
-      `SELECT job_no, order_quantity, machine_id, status
+      `SELECT job_no, order_quantity, machine_id, status, issue_mode, party_id
        FROM job_orders
        WHERE id=$1`,
       [job_id]
     );
 
-    if (jobRes.rowCount === 0) {
-      throw new Error("Job not found");
-    }
+    if (jobRes.rowCount === 0) throw new Error("Job not found");
 
     const job = jobRes.rows[0];
 
-    if (job.status === "CLOSED") {
-      throw new Error("Job already closed");
-    }
+    if (job.status === "CLOSED") throw new Error("Job already closed");
 
-    const jobNo = job.job_no;
-    const orderQty = Number(job.order_quantity);
-    const machineId = job.machine_id;
-
-    /* 2️⃣ Get current roll count */
-
-    const countRes = await client.query(
-      `SELECT COUNT(*) FROM fabric_production WHERE job_id=$1`,
-      [job_id]
+    let rollIndex = parseInt(
+      (await client.query(`SELECT COUNT(*) FROM fabric_production WHERE job_id=$1`, [job_id]))
+      .rows[0].count
     );
-
-    let rollIndex = parseInt(countRes.rows[0].count);
-
-    /* 3️⃣ Insert all rolls */
 
     for (const w of weights) {
 
       rollIndex++;
 
-      const rollNo =
-        `${jobNo}-R${rollIndex.toString().padStart(3,'0')}`;
+      const rollNo = `${job.job_no}-R${rollIndex.toString().padStart(3,'0')}`;
 
-      await client.query(
-        `INSERT INTO fabric_production
-        (job_id, roll_no, quantity)
-        VALUES ($1,$2,$3)`,
+      const prod = await client.query(
+        `INSERT INTO fabric_production (job_id, roll_no, quantity)
+         VALUES ($1,$2,$3)
+         RETURNING id`,
         [job_id, rollNo, w]
       );
-    }
 
-    /* 4️⃣ Recalculate production */
+      const productionId = prod.rows[0].id;
+
+      if (job.issue_mode === "auto") {
+        await autoDeductYarn(client, job_id, Number(w));
+
+        await client.query(
+          `UPDATE fabric_production
+           SET yarn_deducted = true
+           WHERE id = $1`,
+          [productionId]
+        );
+      }
+    }
 
     const totalRes = await client.query(
       `SELECT COALESCE(SUM(quantity),0) AS produced
@@ -162,51 +199,24 @@ router.post("/bulk", async (req, res) => {
     );
 
     const produced = Number(totalRes.rows[0].produced);
-    const balance = orderQty - produced;
-
-    /* 5️⃣ Auto close job */
+    const balance = job.order_quantity - produced;
 
     if (balance <= 0) {
-
-      await client.query(
-        `UPDATE job_orders
-         SET status='CLOSED'
-         WHERE id=$1`,
-        [job_id]
-      );
-
-      await client.query(
-        `UPDATE machines
-         SET status='IDLE'
-         WHERE id=$1`,
-        [machineId]
-      );
+      await client.query(`UPDATE job_orders SET status='CLOSED' WHERE id=$1`, [job_id]);
+      await client.query(`UPDATE machines SET status='IDLE' WHERE id=$1`, [job.machine_id]);
     }
 
     await client.query("COMMIT");
 
-    res.json({
-      success: true,
-      produced,
-      balance
-    });
+    res.json({ success: true, produced, balance });
 
   } catch(err) {
-
     await client.query("ROLLBACK");
-
     console.error("BULK PRODUCTION ERROR:", err);
-
-    res.status(500).json({
-      error: err.message
-    });
-
+    res.status(500).json({ error: err.message });
   } finally {
-
     client.release();
-
   }
-
 });
 
 export default router;

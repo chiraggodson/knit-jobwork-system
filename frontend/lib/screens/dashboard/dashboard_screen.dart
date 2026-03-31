@@ -8,6 +8,7 @@ import '../yarn/party_yarn_screen.dart';
 import '../job/job_summary_screen.dart';
 import '../../models/user_session.dart';
 import '../admin/product_manager_screen.dart';
+import '../dispatch/dispatch_screen.dart'; // ✅ ADDED
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -21,7 +22,7 @@ class _DashboardState extends State<Dashboard> {
 
   late List<_NavItem> navItems;
 
-  UserSession get s => UserSession.current!; // 🔥 GLOBAL SESSION
+  UserSession get s => UserSession.current!;
 
   @override
   void initState() {
@@ -46,6 +47,10 @@ class _DashboardState extends State<Dashboard> {
       if (s.has("VIEW_REPORTS"))
         const _NavItem(Icons.bar_chart, "Reports"),
 
+      // ✅ ADDED DISPATCH TAB
+      if (s.has("VIEW_JOBS"))
+        const _NavItem(Icons.local_shipping, "Dispatch"),
+
       if (s.has("VIEW_SETTINGS"))
         const _NavItem(Icons.settings, "Settings"),
     ];
@@ -60,6 +65,10 @@ class _DashboardState extends State<Dashboard> {
     if (s.has("VIEW_MACHINES")) list.add(const MachineScreen());
     if (s.has("VIEW_PRODUCTS")) list.add(const ProductManagerScreen());
     if (s.has("VIEW_REPORTS")) list.add(const ReportsScreen());
+
+    // ✅ ADDED DISPATCH SCREEN (TEMP jobId)
+    if (s.has("VIEW_JOBS")) list.add(const DispatchScreen(jobId: 1));
+
     if (s.has("VIEW_SETTINGS")) list.add(const SettingsScreen());
 
     return list;
@@ -129,7 +138,7 @@ class _DashboardState extends State<Dashboard> {
               leading: const Icon(Icons.logout, color: Colors.red),
               title: const Text("Logout"),
               onTap: () {
-                UserSession.clear(); // 🔥 CLEAR SESSION
+                UserSession.clear();
 
                 Navigator.pushReplacement(
                   context,

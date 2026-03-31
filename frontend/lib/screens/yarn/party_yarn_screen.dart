@@ -65,7 +65,7 @@ class PartyYarnScreen extends StatelessWidget {
       appBar: AppBar(title: const Text("Party Yarn Ledger")),
 
       body: FutureBuilder(
-        future: ApiService.getParties(),
+        future: ApiService.getPartyYarnSummary(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
