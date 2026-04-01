@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 
 
 class ApiService {
-  static const baseUrl = "http://192.168.1.31:4000";
+  static const baseUrl = "http://192.168.29.6:4000";
 
 static Future<void> createJob({
   required int partyId,
@@ -348,7 +348,7 @@ static Future<List<dynamic>> getPartyYarnSummary() async {
     }
   }
 
-static Future bulkProduction(
+static Future addProduction(
     int jobId,
     List<double> weights,
 ) async {
@@ -363,7 +363,7 @@ static Future bulkProduction(
   );
 
   if (res.statusCode != 200) {
-    throw Exception("Production save failed");
+    throw Exception("Production failed: ${res.statusCode} - ${res.body}");
   }
 }
   
@@ -384,7 +384,7 @@ static Future bulkProduction(
   );
 
   if (res.statusCode != 200) {
-    throw Exception("Failed to load inward list");
+    throw Exception("Failed to load yarn lots");
   }
 
   return jsonDecode(res.body);
@@ -444,31 +444,7 @@ static Future bulkProduction(
       throw Exception("Failed to add fabric");
     }
   }
-
-
-  /* ================= PRODUCTION ================= */
-
-  static Future<void> addProduction({
-    required int jobId,
-    required String rollNo,
-    required double quantity,
-  }) async {
-    final res = await http.post(
-      Uri.parse("$baseUrl/api/production"),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "job_id": jobId,
-        "roll_no": rollNo,
-        "quantity": quantity,
-      }),
-    );
-
-    if (res.statusCode < 200 || res.statusCode >= 300) {
-      throw Exception(res.body);
-    }
-  }
-
-  /* ================= JOB YARN HISTORY ================= */
+  /* ================= Delete Job HISTORY ================= */
     static Future<void> deleteJob(int id) async {
 
     await http.delete(

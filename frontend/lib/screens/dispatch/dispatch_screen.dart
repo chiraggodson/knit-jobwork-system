@@ -36,14 +36,23 @@ class _DispatchScreenState extends State<DispatchScreen> {
     try {
 
       final data = await ApiService.getDispatchRolls(widget.jobId);
+      final item = data[0]; // 👈 IMPORTANT
 
-      setState(() {
-        jobNo = data['job_no'] ?? "";
-        producedQty = double.tryParse(data['produced_qty'].toString()) ?? 0;
-        dispatchedQty = double.tryParse(data['dispatched_qty'].toString()) ?? 0;
-        rolls = data['rolls'] ?? [];
-        loading = false;
-      });
+setState(() {
+  jobNo = item['job_no']?.toString() ?? "";
+
+  producedQty =
+      double.tryParse(item['produced_qty'].toString()) ?? 0;
+
+  dispatchedQty =
+      double.tryParse(item['dispatched_qty'].toString()) ?? 0;
+
+  rolls = item['rolls'] is List ? item['rolls'] : [];
+
+  loading = false;
+});
+
+   
 
     } catch (e) {
 

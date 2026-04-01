@@ -25,7 +25,6 @@ async function autoDeductYarn(client, job_id, qty) {
 
   let remaining = qty;
 
-  // get all lots for this job's party (FIFO)
   const lots = await client.query(
     `SELECT yl.id
      FROM yarn_lot yl
@@ -74,7 +73,7 @@ router.post("/", async (req, res) => {
     await client.query("BEGIN");
 
     const jobCheck = await client.query(
-      `SELECT id, status, order_quantity, machine_id, issue_mode
+      `SELECT id, status, order_quantity, machine_id
        FROM job_orders
        WHERE id = $1`,
       [job_id]
@@ -86,7 +85,6 @@ router.post("/", async (req, res) => {
 
     if (job.status === "CLOSED") throw new Error("Job already closed");
 
-    /* 1️⃣ Insert production */
     const prod = await client.query(
       `INSERT INTO fabric_production (job_id, roll_no, quantity)
        VALUES ($1, $2, $3)
@@ -96,19 +94,8 @@ router.post("/", async (req, res) => {
 
     const productionId = prod.rows[0].id;
 
-    /* 2️⃣ AUTO ISSUE (ONLY IF AUTO MODE) */
-    if (job.issue_mode === "auto") {
-      await autoDeductYarn(client, job_id, Number(quantity));
+    /* 🔥 AUTO DEDUCTION DISABLED (issue_mode removed) */
 
-      await client.query(
-        `UPDATE fabric_production
-         SET yarn_deducted = true
-         WHERE id = $1`,
-        [productionId]
-      );
-    }
-
-    /* 3️⃣ Calculate totals */
     const totalResult = await client.query(
       `SELECT COALESCE(SUM(quantity),0) AS produced
        FROM fabric_production
@@ -147,7 +134,7 @@ router.post("/bulk", async (req, res) => {
     await client.query("BEGIN");
 
     const jobRes = await client.query(
-      `SELECT job_no, order_quantity, machine_id, status, issue_mode, party_id
+      `SELECT job_no, order_quantity, machine_id, status, party_id
        FROM job_orders
        WHERE id=$1`,
       [job_id]
@@ -179,16 +166,7 @@ router.post("/bulk", async (req, res) => {
 
       const productionId = prod.rows[0].id;
 
-      if (job.issue_mode === "auto") {
-        await autoDeductYarn(client, job_id, Number(w));
-
-        await client.query(
-          `UPDATE fabric_production
-           SET yarn_deducted = true
-           WHERE id = $1`,
-          [productionId]
-        );
-      }
+      /* 🔥 AUTO DEDUCTION DISABLED (issue_mode removed) */
     }
 
     const totalRes = await client.query(

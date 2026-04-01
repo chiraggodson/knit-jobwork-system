@@ -59,12 +59,20 @@ class _ProductionEntryScreenState
 
     try {
 
-      await ApiService.bulkProduction(
-        widget.jobId,
-        weights,
+      print("SENDING => jobId: ${widget.jobId}, weights: $weights");
+
+      await ApiService.addProduction(
+   widget.jobId,
+   weights,
+);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Production saved")),
       );
 
-      Navigator.pop(context,true);
+      Navigator.pop(context, true);
 
     } catch (e) {
 
@@ -118,38 +126,38 @@ class _ProductionEntryScreenState
                   ),
                 ),
 
-                SizedBox(width:40)
+                SizedBox(width: 40)
 
               ],
             ),
 
-            const SizedBox(height:10),
+            const SizedBox(height: 10),
 
             Expanded(
 
               child: ListView.builder(
                 itemCount: _weights.length,
-                itemBuilder: (context,index){
+                itemBuilder: (context, index){
 
                   return Padding(
                     padding:
                         const EdgeInsets.symmetric(
-                            vertical:6),
+                            vertical: 6),
 
                     child: Row(
                       children: [
 
                         Expanded(
-                          flex:2,
+                          flex: 2,
                           child: Text(
-                            "${index+1}",
+                            "${index + 1}",
                             style: const TextStyle(
-                                fontSize:16),
+                                fontSize: 16),
                           ),
                         ),
 
                         Expanded(
-                          flex:4,
+                          flex: 4,
                           child: TextField(
                             controller:
                                 _weights[index],
@@ -157,7 +165,7 @@ class _ProductionEntryScreenState
                                 TextInputType.number,
                             decoration:
                                 const InputDecoration(
-                              hintText:"Enter weight",
+                              hintText: "Enter weight",
                             ),
                           ),
                         ),
@@ -165,7 +173,7 @@ class _ProductionEntryScreenState
                         IconButton(
                           icon: const Icon(
                               Icons.delete,
-                              color:Colors.red),
+                              color: Colors.red),
                           onPressed: (){
                             _removeRow(index);
                           },
@@ -178,7 +186,7 @@ class _ProductionEntryScreenState
               ),
             ),
 
-            const SizedBox(height:10),
+            const SizedBox(height: 10),
 
             SizedBox(
               width: double.infinity,

@@ -23,7 +23,7 @@ class _IssueYarnScreenState extends State<IssueYarnScreen> {
 
   bool loading = false;
   bool lotLoading = true;
-
+  
   @override
   void initState() {
     super.initState();
@@ -35,6 +35,7 @@ class _IssueYarnScreenState extends State<IssueYarnScreen> {
       final res = await ApiService.getYarnLotsByParty(widget.partyId); // temporary reuse
       setState(() {
         yarnLots = res;
+        print(selectedLot);
         lotLoading = false;
       });
     } catch (e) {
@@ -73,11 +74,27 @@ double balance = safeDouble(selectedLot['balance']);
     }
 
     setState(() => loading = true);
+    final yarnLotIdRaw = selectedLot['id'];
 
+if (yarnLotIdRaw == null) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text("Invalid yarn lot selected")),
+  );
+  return;
+}
+
+final yarnLotId = int.tryParse(yarnLotIdRaw.toString());
+
+if (yarnLotId == null) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text("Invalid yarn lot ID")),
+  );
+  return;
+}
     try {
       await ApiService.issueYarn(
         jobId: widget.jobId,
-        yarnLotId: selectedLot['yarn_lot_id'],
+        yarnLotId: yarnLotId,
         quantity: qty,
       );
 
@@ -120,9 +137,7 @@ double balance = safeDouble(selectedLot['balance']);
 
                     final yarnName = lot['yarn_name'] ?? '';
                     final lotNo = lot['lot_no'] ?? '';
-                    final balance =
-                        double.tryParse(lot['balance'].toString()) ?? 0;
-
+                    final balance = double.tryParse(lot['balance'].toString()) ?? 0;
                     return DropdownMenuItem(
                       value: lot,
                       child: Text(

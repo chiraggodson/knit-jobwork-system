@@ -1,3 +1,5 @@
+import 'package:knit_jobwork_app/screens/dispatch/jobwise_dispatch_screen.dart';
+
 import 'edit_job_screen.dart';
 import 'package:flutter/material.dart';
 import '../yarn/issue_yarn_screen.dart';
@@ -21,13 +23,14 @@ class JobDetailScreen extends StatefulWidget {
   @override
   State<JobDetailScreen> createState() => _JobDetailScreenState();
 }
-bool dispatchExpanded = false;
-bool dispatchLoading = false;
-List<dynamic> dispatchHistory = [];
+
 
 class _JobDetailScreenState extends State<JobDetailScreen> {
   late Future<Map<String, dynamic>> jobFuture;
 
+  bool dispatchExpanded = false;
+bool dispatchLoading = false;
+List<dynamic> dispatchHistory = [];
   bool yarnExpanded = false;
   bool productionExpanded = false;
 
@@ -651,7 +654,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                       Navigator.push<bool>(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => DispatchScreen(
+                          builder: (_) => JobwiseDispatchScreen(
                             jobId: widget.jobId,
                           ),
                         ),
