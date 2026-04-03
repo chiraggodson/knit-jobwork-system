@@ -9,6 +9,7 @@ import '../job/job_summary_screen.dart';
 import '../../models/user_session.dart';
 import '../admin/product_manager_screen.dart';
 import '../dispatch/dispatch_screen.dart'; // ✅ ADDED
+import '../dispatch/dispatch_list_screen.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -67,7 +68,7 @@ class _DashboardState extends State<Dashboard> {
     if (s.has("VIEW_REPORTS")) list.add(const ReportsScreen());
 
     // ✅ ADDED DISPATCH SCREEN (TEMP jobId)
-    if (s.has("VIEW_JOBS")) list.add(const DispatchScreen(jobId: 1));
+    if (s.has("VIEW_JOBS")) list.add(const DispatchListScreen());
 
     if (s.has("VIEW_SETTINGS")) list.add(const SettingsScreen());
 

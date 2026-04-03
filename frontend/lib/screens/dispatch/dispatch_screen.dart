@@ -3,10 +3,12 @@ import '../../services/api_service.dart';
 
 class DispatchScreen extends StatefulWidget {
   final int jobId;
+  final Map<String, dynamic>? dispatchData;
 
   const DispatchScreen({
     super.key,
     required this.jobId,
+    this.dispatchData,
   });
 
   @override
@@ -32,11 +34,22 @@ class _DispatchScreenState extends State<DispatchScreen> {
   }
 
   Future<void> loadRolls() async {
-
     try {
 
-      final data = await ApiService.getDispatchRolls(widget.jobId);
-      final item = data[0]; // 👈 IMPORTANT
+      final data = await ApiService.getDispatchRolls(
+  widget.jobId,
+  widget.dispatchData?['party_id'],
+  widget.dispatchData?['fabric'],
+);
+    print("DISPATCH API RESPONSE: $data");
+
+    if (data == null || data.isEmpty) { 
+      setState(() { 
+        rolls = []; 
+        loading = false; 
+        });
+       return; } 
+    final item = data[0];
 
 setState(() {
   jobNo = item['job_no']?.toString() ?? "";
@@ -51,8 +64,6 @@ setState(() {
 
   loading = false;
 });
-
-   
 
     } catch (e) {
 
@@ -82,49 +93,64 @@ setState(() {
 
   Future<void> dispatch() async {
 
-    if (selectedRolls.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Select at least one roll")),
-      );
-      return;
-    }
+if (selectedRolls.isEmpty) {
+ScaffoldMessenger.of(context).showSnackBar(
+const SnackBar(content: Text("Select at least one roll")),
+);
+return;
+}
 
-    setState(() => dispatching = true);
+setState(() => dispatching = true);
 
-    try {
+try {
 
-      final selectedData = rolls
-          .where((r) => selectedRolls.contains(r['roll_no']))
-          .map((r) => {
-                "roll_no": r['roll_no'],
-                "quantity": r['quantity']
-              })
-          .toList();
 
-      await ApiService.dispatchRolls(
-        jobId: widget.jobId,
-        rolls: selectedData,
-      );
+final selectedData = rolls
+    .where((r) => selectedRolls.contains(r['roll_no']))
+    .map((r) => {
+          "roll_no": r['roll_no'],
+          "quantity": r['quantity']
+        })
+    .toList();
 
-      if (!mounted) return;
+/// 🔥 NEW ERP PAYLOAD
+final payload = {
+  "job_id": widget.jobId,
+  "challan_no": widget.dispatchData?['challan_no'],
+  "date": widget.dispatchData?['date'],
+  "party_po": widget.dispatchData?['party_po'],
+  "design_no": widget.dispatchData?['design_no'],
+  "fabric": widget.dispatchData?['fabric'],
+  "lot_no": widget.dispatchData?['lot_no'],
+  "color": widget.dispatchData?['color'],
+  "rolls": selectedData,
+};
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Rolls dispatched successfully")),
-      );
+/// 👉 NEW API (create this next)
+await ApiService.createDispatch(payload);
 
-      Navigator.pop(context, true);
+if (!mounted) return;
 
-    } catch (e) {
+ScaffoldMessenger.of(context).showSnackBar(
+  const SnackBar(content: Text("Dispatch saved successfully")),
+);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+Navigator.pop(context, true);
 
-    }
 
-    if (mounted) setState(() => dispatching = false);
+} catch (e) {
 
-  }
+
+ScaffoldMessenger.of(context).showSnackBar(
+  SnackBar(content: Text(e.toString())),
+);
+
+
+}
+
+if (mounted) setState(() => dispatching = false);
+}
+
 
   @override
   Widget build(BuildContext context) {

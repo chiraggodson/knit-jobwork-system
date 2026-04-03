@@ -4,6 +4,8 @@ import cors from "cors";
 // Routes
 import authRoutes from "./routes/auth.routes.js";
 import dispatchRoutes from "./routes/dispatch.routes.js";
+import dispatchMasterRoutes  from "./routes/dispatch.master.routes.js";
+
 import fabricsRoutes from "./routes/fabrics.routes.js";
 import featuresRoutes from "./routes/features.routes.js";
 import jobRoutes from "./routes/job.routes.js";
@@ -17,6 +19,7 @@ import yarnRoutes from "./routes/yarn.routes.js";
 
 const app = express();
 
+
  /*
 # MIDDLEWARE
 */
@@ -29,6 +32,7 @@ app.use(express.urlencoded({ extended: true }));
 */
 app.use("/api/auth", authRoutes);
 app.use("/api/dispatch", dispatchRoutes);
+app.use("/api/dispatch", dispatchMasterRoutes);
 app.use("/api/fabrics", fabricsRoutes);
 app.use("/api/features", featuresRoutes);
 app.use("/api/jobs", jobRoutes);

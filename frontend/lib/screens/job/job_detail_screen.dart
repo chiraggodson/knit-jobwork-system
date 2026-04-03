@@ -645,6 +645,7 @@ List<dynamic> dispatchHistory = [];
                   },
                 ),
 
+              /*
                 if (status == "OPEN")
                 actionButton(
                   icon: Icons.local_shipping,
@@ -663,6 +664,8 @@ List<dynamic> dispatchHistory = [];
                   },
                 ),
 
+                */
+                
                 if (status == "OPEN")
                 actionButton(
                   icon: Icons.lock,

@@ -44,6 +44,8 @@ static Future<void> createJob({
     throw Exception("Job creation failed");
   }
 }
+
+
   /* ================= JOBS ================= */
 
   
@@ -486,18 +488,23 @@ static Future addProduction(
 
   /* GET ROLLS READY FOR DISPATCH */
 
-  static Future<List<dynamic>> getDispatchRolls(int jobId) async {
+  static Future getDispatchRolls(
+  int jobId,
+  int? partyId,
+  String? fabric,
+) async {
+  final res = await http.get(
+    Uri.parse(
+      "$baseUrl/api/dispatch/rolls?job_id=$jobId&party_id=$partyId&fabric=$fabric",
+    ),
+  );
 
-    final res = await http.get(
-      Uri.parse("$baseUrl/api/dispatch/job/$jobId"),
-    );
-
-    if (res.statusCode != 200) {
-      throw Exception("Failed to load dispatch rolls");
-    }
-
-    return jsonDecode(res.body);
+  if (res.statusCode != 200) {
+    throw Exception("Failed to load dispatch rolls");
   }
+
+  return jsonDecode(res.body);
+}
 
   /* DISPATCH SELECTED ROLLS */
 
@@ -586,6 +593,40 @@ static Future<void> addSetting({
     throw Exception(res.body);
   }
 }
+static Future<void> createDispatch(Map<String, dynamic> data) async {
+  final res = await http.post(
+    Uri.parse("$baseUrl/api/dispatch/create"),
+    headers: {"Content-Type": "application/json"},
+    body: jsonEncode(data),
+  );
 
+  if (res.statusCode != 200) {
+    throw Exception("Failed to create dispatch");
+  }
+}
+
+static Future<List> getDispatchList() async {
+  final res = await http.get(
+    Uri.parse("$baseUrl/api/dispatch"),
+  );
+
+  if (res.statusCode != 200) {
+    throw Exception("Failed to load dispatch list");
+  }
+
+  return jsonDecode(res.body);
+}
+
+static Future<Map<String, dynamic>> getDispatchDetail(int id) async {
+  final res = await http.get(
+    Uri.parse("$baseUrl/api/dispatch/$id"),
+  );
+
+  if (res.statusCode != 200) {
+    throw Exception("Failed to load dispatch detail");
+  }
+
+  return jsonDecode(res.body);
+}
 
 }

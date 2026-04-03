@@ -216,6 +216,94 @@ router.get("/dispatch/jobs", async (req, res) => {
   res.json(result.rows);
 
 });
+/* ================= DISPATCH DETAIL ================= */
 
+router.get("/:id", async (req, res) => {
+try {
+const { id } = req.params;
+
+
+const master = await pool.query(
+  `SELECT 
+    d.*,
+    j.party_name
+  FROM fabric_dispatch_master d
+  LEFT JOIN jobs j ON j.id = d.job_id
+  WHERE d.id = $1`,
+  [id]
+);
+
+if (master.rows.length === 0) {
+  return res.status(404).json({
+    error: "Dispatch not found"
+  });
+}
+
+const rolls = await pool.query(
+  `SELECT roll_no, quantity
+   FROM fabric_dispatch
+   WHERE dispatch_id = $1`,
+  [id]
+);
+
+res.json({
+  ...master.rows[0],
+  rolls: rolls.rows
+});
+
+
+} catch (err) {
+console.error(err);
+res.status(500).json({
+error: "Failed to fetch dispatch detail"
+});
+}
+});
+
+router.get("/rolls", async (req, res) => {
+try {
+const { job_id, party_id, fabric } = req.query;
+
+
+const result = await pool.query(
+  `
+  SELECT 
+    j.job_no,
+    j.party_name,
+    j.fabric,
+    j.total_production as produced_qty,
+    COALESCE(SUM(d.quantity),0) as dispatched_qty,
+
+    json_agg(
+      json_build_object(
+        'roll_no', p.roll_no,
+        'quantity', p.quantity
+      )
+    ) FILTER (WHERE p.roll_no IS NOT NULL) as rolls
+
+  FROM fabric_production p
+  JOIN jobs j ON j.id = p.job_id
+
+  LEFT JOIN fabric_dispatch d 
+    ON d.roll_no = p.roll_no
+
+  WHERE p.job_id = $1
+    AND j.party_id = $2
+    AND j.fabric = $3
+    AND d.roll_no IS NULL  -- 🔥 only NOT dispatched
+
+  GROUP BY j.job_no, j.party_name, j.fabric, j.total_production
+  `,
+  [job_id, party_id, fabric]
+);
+
+res.json(result.rows);
+
+
+} catch (err) {
+console.error(err);
+res.status(500).json({ error: "Failed to fetch rolls" });
+}
+});
 
 export default router;
