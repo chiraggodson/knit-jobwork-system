@@ -102,7 +102,7 @@ const totalDispatchRes = await client.query(
 const dispatchedQty = parseFloat(totalDispatchRes.rows[0].total);
 
 const jobRes = await client.query(
-  `SELECT order_quantity FROM jobs WHERE id = $1`,
+  `SELECT order_quantity FROM job_orders WHERE id = $1`,
   [job_id]
 );
 
@@ -114,7 +114,7 @@ if (dispatchedQty >= orderQty) {
 }
 
 await client.query(
-  `UPDATE jobs
+  `UPDATE job_orders
    SET dispatched_quantity = $1,
        status = $2
    WHERE id = $3`,
@@ -149,8 +149,10 @@ client.release();
 
 /* ================= GET DISPATCH LIST ================= */
 
+
 router.get("/", async (req, res) => {
 try {
+  const { id } = req.params;
 
 
 const result = await pool.query(`
@@ -158,7 +160,7 @@ const result = await pool.query(`
     d.id,
     d.challan_no,
     TO_CHAR(d.dispatch_date, 'YYYY-MM-DD') as date,
-    j.party_name as party,
+    j.party_id as party,
     d.fabric,
     d.lot_no,
     d.color,
@@ -184,5 +186,6 @@ res.status(500).json({
 
 }
 });
+
 
 export default router;

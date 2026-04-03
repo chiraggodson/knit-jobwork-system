@@ -27,6 +27,10 @@ class _DispatchScreenState extends State<DispatchScreen> {
   bool loading = true;
   bool dispatching = false;
 
+  String _safeString(dynamic val) {
+    return val?.toString() ?? "";
+  }
+
   @override
   void initState() {
     super.initState();
@@ -36,38 +40,102 @@ class _DispatchScreenState extends State<DispatchScreen> {
   Future<void> loadRolls() async {
     try {
 
-      final data = await ApiService.getDispatchRolls(
-  widget.jobId,
-  widget.dispatchData?['party_id'],
-  widget.dispatchData?['fabric'],
-);
-    print("DISPATCH API RESPONSE: $data");
+      final data = await ApiService.getDispatchRolls(widget.jobId);
 
-    if (data == null || data.isEmpty) { 
-      setState(() { 
-        rolls = []; 
-        loading = false; 
+      print("DISPATCH API RESPONSE: $data");
+
+      /// 🔥 SUPPORT BOTH OLD + NEW API STRUCTURE
+
+      if (data is List && data.isNotEmpty && data[0] is Map && data[0]['rolls'] != null) {
+        // NEW STRUCTURE
+        final item = data[0];
+
+        setState(() {
+          jobNo = item['job_no']?.toString() ?? "";
+
+          producedQty =
+              double.tryParse(item['produced_qty'].toString()) ?? 0;
+
+          dispatchedQty =
+              double.tryParse(item['dispatched_qty'].toString()) ?? 0;
+
+          rolls = item['rolls'] ?? [];
+
+          loading = false;
         });
-       return; } 
-    final item = data[0];
 
-setState(() {
-  jobNo = item['job_no']?.toString() ?? "";
-
-  producedQty =
-      double.tryParse(item['produced_qty'].toString()) ?? 0;
-
-  dispatchedQty =
-      double.tryParse(item['dispatched_qty'].toString()) ?? 0;
-
-  rolls = item['rolls'] is List ? item['rolls'] : [];
-
-  loading = false;
-});
+      } else {
+        // OLD STRUCTURE (your working one)
+        setState(() {
+          rolls = data;
+          loading = false;
+        });
+      }
 
     } catch (e) {
-
       setState(() => loading = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
+  }
+
+  void toggleRoll(String rollNo) {
+    setState(() {
+      if (selectedRolls.contains(rollNo)) {
+        selectedRolls.remove(rollNo);
+      } else {
+        selectedRolls.add(rollNo);
+      }
+    });
+  }
+
+  Future<void> dispatch() async {
+
+    if (selectedRolls.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Select at least one roll")),
+      );
+      return;
+    }
+
+    setState(() => dispatching = true);
+
+    try {
+
+      final selectedData = rolls
+          .where((r) => selectedRolls.contains(_safeString(r['roll_no'])))
+          .map((r) => {
+                "roll_no": _safeString(r['roll_no']),
+                "quantity": r['quantity']
+              })
+          .toList();
+
+      /// 🔥 FINAL ERP PAYLOAD
+      final payload = {
+        "job_id": widget.jobId,
+        "challan_no": widget.dispatchData?['challan_no'],
+        "date": widget.dispatchData?['date'],
+        "party_po": widget.dispatchData?['party_po'],
+        "design_no": widget.dispatchData?['design_no'],
+        "fabric": widget.dispatchData?['fabric'],
+        "lot_no": widget.dispatchData?['lot_no'],
+        "color": widget.dispatchData?['color'],
+        "rolls": selectedData,
+      };
+
+      await ApiService.createDispatch(payload);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Dispatch saved successfully")),
+      );
+
+      Navigator.pop(context, true);
+
+    } catch (e) {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString())),
@@ -75,82 +143,8 @@ setState(() {
 
     }
 
+    if (mounted) setState(() => dispatching = false);
   }
-
-  void toggleRoll(String rollNo) {
-
-    setState(() {
-
-      if (selectedRolls.contains(rollNo)) {
-        selectedRolls.remove(rollNo);
-      } else {
-        selectedRolls.add(rollNo);
-      }
-
-    });
-
-  }
-
-  Future<void> dispatch() async {
-
-if (selectedRolls.isEmpty) {
-ScaffoldMessenger.of(context).showSnackBar(
-const SnackBar(content: Text("Select at least one roll")),
-);
-return;
-}
-
-setState(() => dispatching = true);
-
-try {
-
-
-final selectedData = rolls
-    .where((r) => selectedRolls.contains(r['roll_no']))
-    .map((r) => {
-          "roll_no": r['roll_no'],
-          "quantity": r['quantity']
-        })
-    .toList();
-
-/// 🔥 NEW ERP PAYLOAD
-final payload = {
-  "job_id": widget.jobId,
-  "challan_no": widget.dispatchData?['challan_no'],
-  "date": widget.dispatchData?['date'],
-  "party_po": widget.dispatchData?['party_po'],
-  "design_no": widget.dispatchData?['design_no'],
-  "fabric": widget.dispatchData?['fabric'],
-  "lot_no": widget.dispatchData?['lot_no'],
-  "color": widget.dispatchData?['color'],
-  "rolls": selectedData,
-};
-
-/// 👉 NEW API (create this next)
-await ApiService.createDispatch(payload);
-
-if (!mounted) return;
-
-ScaffoldMessenger.of(context).showSnackBar(
-  const SnackBar(content: Text("Dispatch saved successfully")),
-);
-
-Navigator.pop(context, true);
-
-
-} catch (e) {
-
-
-ScaffoldMessenger.of(context).showSnackBar(
-  SnackBar(content: Text(e.toString())),
-);
-
-
-}
-
-if (mounted) setState(() => dispatching = false);
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -158,7 +152,6 @@ if (mounted) setState(() => dispatching = false);
     final remaining = producedQty - dispatchedQty;
 
     return Scaffold(
-
       backgroundColor: const Color(0xFF121212),
 
       appBar: AppBar(
@@ -168,46 +161,46 @@ if (mounted) setState(() => dispatching = false);
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : Padding(
-
               padding: const EdgeInsets.all(20),
 
               child: Column(
                 children: [
 
-                  /// HEADER
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E1E1E),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          jobNo,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF00BFA6),
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text("Produced: ${producedQty.toStringAsFixed(2)}"),
-                            Text("Dispatched: ${dispatchedQty.toStringAsFixed(2)}"),
-                            Text(
-                              "Remaining: ${remaining.toStringAsFixed(2)}",
-                              style: const TextStyle(color: Colors.orange),
+                  /// 🔥 HEADER (only if available)
+                  if (jobNo.isNotEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E1E1E),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            jobNo,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF00BFA6),
                             ),
-                          ],
-                        )
-                      ],
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text("Produced: ${producedQty.toStringAsFixed(2)}"),
+                              Text("Dispatched: ${dispatchedQty.toStringAsFixed(2)}"),
+                              Text(
+                                "Remaining: ${remaining.toStringAsFixed(2)}",
+                                style: const TextStyle(color: Colors.orange),
+                              ),
+                            ],
+                          )
+                        ],
+                      ),
                     ),
-                  ),
 
                   /// EMPTY STATE
                   rolls.isEmpty
@@ -221,14 +214,12 @@ if (mounted) setState(() => dispatching = false);
                         )
                       : Expanded(
                           child: ListView.builder(
-
                             itemCount: rolls.length,
-
                             itemBuilder: (context, index) {
 
                               final r = rolls[index];
 
-                              final rollNo = r['roll_no'];
+                              final rollNo = _safeString(r['roll_no']);
                               final qty = double.tryParse(
                                       r['quantity'].toString()) ??
                                   0;
@@ -237,20 +228,15 @@ if (mounted) setState(() => dispatching = false);
                                   selectedRolls.contains(rollNo);
 
                               return Container(
-
                                 margin: const EdgeInsets.only(bottom: 12),
-
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF1E1E1E),
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
                                       color: Colors.grey.shade800),
                                 ),
-
                                 child: CheckboxListTile(
-
                                   value: selected,
-
                                   activeColor: const Color(0xFF00BFA6),
 
                                   title: Text(
@@ -267,15 +253,10 @@ if (mounted) setState(() => dispatching = false);
                                     ),
                                   ),
 
-                                  onChanged: (_) =>
-                                      toggleRoll(rollNo),
-
+                                  onChanged: (_) => toggleRoll(rollNo),
                                 ),
-
                               );
-
                             },
-
                           ),
                         ),
 
@@ -283,12 +264,9 @@ if (mounted) setState(() => dispatching = false);
 
                   /// DISPATCH BUTTON
                   SizedBox(
-
                     width: double.infinity,
                     height: 52,
-
                     child: ElevatedButton.icon(
-
                       icon: const Icon(Icons.local_shipping),
 
                       label: dispatching
@@ -308,19 +286,11 @@ if (mounted) setState(() => dispatching = false);
 
                       onPressed:
                           dispatching ? null : dispatch,
-
                     ),
-
                   ),
-
                 ],
-
               ),
-
             ),
-
     );
-
   }
-
 }

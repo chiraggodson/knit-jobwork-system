@@ -187,13 +187,13 @@ router.get("/job/:job_id", async (req, res) => {
 
 });
 
-router.get("/dispatch/jobs", async (req, res) => {
+router.get("/dispatch/job_orders", async (req, res) => {
 
   const result = await pool.query(`
     SELECT
       j.id,
       j.job_no,
-      p.name AS party_name,
+      p.name AS name,
 
       COALESCE((
         SELECT SUM(quantity)
@@ -226,9 +226,9 @@ const { id } = req.params;
 const master = await pool.query(
   `SELECT 
     d.*,
-    j.party_name
+    p.name
   FROM fabric_dispatch_master d
-  LEFT JOIN jobs j ON j.id = d.job_id
+  LEFT JOIN job_orders j ON j.id = d.job_id
   WHERE d.id = $1`,
   [id]
 );
@@ -262,16 +262,19 @@ error: "Failed to fetch dispatch detail"
 
 router.get("/rolls", async (req, res) => {
 try {
-const { job_id, party_id, fabric } = req.query;
+const { job_id, party_id, fabric_id } = req.query;
 
 
-const result = await pool.query(
-  `
+console.log("ROLL FILTER:", req.query);
+
+const result = await pool.query(`
   SELECT 
     j.job_no,
-    j.party_name,
-    j.fabric,
-    j.total_production as produced_qty,
+
+    pty.name as party_name,
+
+    COALESCE(SUM(p.quantity),0) as produced_qty,
+
     COALESCE(SUM(d.quantity),0) as dispatched_qty,
 
     json_agg(
@@ -282,28 +285,79 @@ const result = await pool.query(
     ) FILTER (WHERE p.roll_no IS NOT NULL) as rolls
 
   FROM fabric_production p
-  JOIN jobs j ON j.id = p.job_id
+
+  JOIN job_orders j ON j.id = p.job_id
+
+  LEFT JOIN parties pty ON pty.id = j.party_id
 
   LEFT JOIN fabric_dispatch d 
     ON d.roll_no = p.roll_no
 
   WHERE p.job_id = $1
-    AND j.party_id = $2
-    AND j.fabric = $3
-    AND d.roll_no IS NULL  -- 🔥 only NOT dispatched
+    AND ($2::int IS NULL OR j.party_id = $2)
+    AND ($3::int IS NULL OR j.fabric_id = $3)
+    AND d.roll_no IS NULL   -- ✅ only available rolls
 
-  GROUP BY j.job_no, j.party_name, j.fabric, j.total_production
-  `,
-  [job_id, party_id, fabric]
-);
+  GROUP BY j.job_no, pty.name
+`, [job_id, party_id || null, fabric_id || null]);
 
 res.json(result.rows);
 
 
 } catch (err) {
-console.error(err);
+console.error("ROLL FETCH ERROR:", err);
 res.status(500).json({ error: "Failed to fetch rolls" });
 }
+});
+/* ================= GET DISPATCH ROLLS (JOB BASED) ================= */
+router.get("/rolls/:jobId", async (req, res) => {
+  try {
+    const jobId = parseInt(req.params.jobId);
+
+    const result = await pool.query(`
+      SELECT
+        j.job_no,
+
+        COALESCE((
+          SELECT SUM(quantity)
+          FROM fabric_production
+          WHERE job_id = j.id
+        ),0)::float AS produced_qty,
+
+        COALESCE((
+          SELECT SUM(quantity)
+          FROM fabric_dispatch
+          WHERE job_id = j.id
+        ),0)::float AS dispatched_qty,
+
+        (
+          SELECT json_agg(fp)
+          FROM (
+            SELECT
+              fp.roll_no,
+              fp.quantity
+            FROM fabric_production fp
+            WHERE fp.job_id = j.id
+
+            AND fp.roll_no NOT IN (
+              SELECT roll_no
+              FROM fabric_dispatch
+              WHERE job_id = j.id
+            )
+
+          ) fp
+        ) AS rolls
+
+      FROM job_orders j
+      WHERE j.id = $1
+    `, [jobId]);
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error("❌ GET DISPATCH ROLLS ERROR:", err);
+    res.status(500).json({ error: "Failed to load rolls" });
+  }
 });
 
 export default router;

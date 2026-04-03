@@ -659,4 +659,51 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+/* ================= FILTER JOBS (FOR DISPATCH) ================= */
+router.get("/filter", async (req, res) => {
+  try {
+    const { party_id, fabric_id } = req.query;
+
+    if (!party_id || !fabric_id) {
+      return res.status(400).json({
+        error: "party_id and fabric_id are required"
+      });
+    }
+
+    const result = await pool.query(`
+      SELECT
+        j.id,
+        j.job_no,
+        j.party_id,
+        j.fabric_id,
+        j.order_quantity,
+
+        COALESCE((
+          SELECT SUM(quantity)
+          FROM fabric_production
+          WHERE job_id = j.id
+        ),0)::float AS produced_qty,
+
+        COALESCE((
+          SELECT SUM(quantity)
+          FROM fabric_dispatch
+          WHERE job_id = j.id
+        ),0)::float AS dispatched_qty
+
+      FROM job_orders j
+      WHERE j.party_id = $1
+        AND j.fabric_id = $2
+        AND j.status = 'OPEN'
+
+      ORDER BY j.created_at DESC
+    `, [party_id, fabric_id]);
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error("❌ FILTER JOBS ERROR:", err);
+    res.status(500).json({ error: "Failed to filter jobs" });
+  }
+});
+
 export default router;

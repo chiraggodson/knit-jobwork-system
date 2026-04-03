@@ -368,7 +368,22 @@ static Future addProduction(
     throw Exception("Production failed: ${res.statusCode} - ${res.body}");
   }
 }
-  
+  static Future<List<dynamic>> getJobsByPartyFabric(
+    int partyId,
+    int fabricId,
+  ) async {
+    final response = await http.get(
+      Uri.parse(
+        "$baseUrl/jobs/filter?party_id=$partyId&fabric_id=$fabricId",
+      ),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception("Failed to load jobs");
+    }
+  }
 
   /* ================= PRODUCTS ================= */
 
@@ -488,22 +503,16 @@ static Future addProduction(
 
   /* GET ROLLS READY FOR DISPATCH */
 
-  static Future getDispatchRolls(
-  int jobId,
-  int? partyId,
-  String? fabric,
-) async {
-  final res = await http.get(
-    Uri.parse(
-      "$baseUrl/api/dispatch/rolls?job_id=$jobId&party_id=$partyId&fabric=$fabric",
-    ),
+  static Future<dynamic> getDispatchRolls(int jobId) async {
+  final response = await http.get(
+    Uri.parse("$baseUrl/dispatch/rolls/$jobId"),
   );
 
-  if (res.statusCode != 200) {
-    throw Exception("Failed to load dispatch rolls");
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body);
+  } else {
+    throw Exception("Failed to load rolls");
   }
-
-  return jsonDecode(res.body);
 }
 
   /* DISPATCH SELECTED ROLLS */
@@ -627,6 +636,20 @@ static Future<Map<String, dynamic>> getDispatchDetail(int id) async {
   }
 
   return jsonDecode(res.body);
+}
+static Future<List<dynamic>> getOpenJobs() async {
+  final response = await http.get(
+    Uri.parse("$baseUrl/api/jobs"),
+  );
+
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+
+    // 🔥 filter only OPEN jobs
+    return data.where((j) => j['status'] == 'OPEN').toList();
+  } else {
+    throw Exception("Failed to load jobs");
+  }
 }
 
 }
