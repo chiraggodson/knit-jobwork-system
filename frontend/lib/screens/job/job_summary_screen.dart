@@ -91,7 +91,28 @@ Widget _smallMetric(String label, String value) {
 
 
   String _sortType = "latest";
-  void _sortJobs(List jobs) {
+  String _search = "";
+  String _statusFilter = "ALL";
+    List _applyFilters(List jobs) {
+  return jobs.where((j) {
+    final jobNo = (j['job_no'] ?? '').toString().toLowerCase();
+    final party = (j['party_name'] ?? '').toString().toLowerCase();
+    final fabric = (j['fabric_name'] ?? '').toString().toLowerCase();
+    final yarn = (j['yarns_used'] ?? '').toString().toLowerCase();
+    final status = (j['status'] ?? '').toString();
+
+    final matchSearch = jobNo.contains(_search) ||
+        party.contains(_search) ||
+        fabric.contains(_search) ||
+        yarn.contains(_search);
+
+    final matchStatus =
+        _statusFilter == "ALL" || status == _statusFilter;
+
+    return matchSearch && matchStatus;
+  }).toList();
+}
+void _sortJobs(List jobs) {
   switch (_sortType) {
 
     case "oldest":
@@ -273,19 +294,58 @@ Widget _sortTile(String title, String value) {
           }
 
           final jobs = snapshot.data ?? [];
-          _sortJobs(jobs);
+          final filtered = _applyFilters(jobs);
+          _sortJobs(filtered);
           if (jobs.isEmpty) {
             return const Center(child: Text("No jobs created yet"));
           }
 
-          return RefreshIndicator(
-            onRefresh: _refreshJobs,
-            child: ListView.builder(
-              padding: const EdgeInsets.only(bottom: 80),
-              itemCount: jobs.length,
-              itemBuilder: (context, index) {
-                final j = jobs[index];
+          return Column(
+  children: [
 
+    // 🔍 SEARCH + FILTER (top)
+    Padding(
+      padding: const EdgeInsets.all(8),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              onChanged: (val) {
+                setState(() => _search = val.toLowerCase());
+              },
+              decoration: const InputDecoration(
+                hintText: "Search jobs...",
+                prefixIcon: Icon(Icons.search),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          DropdownButton<String>(
+            value: _statusFilter,
+            items: ["ALL", "OPEN", "CLOSED", "PAUSED", "YARN_NEEDED"]
+                .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                .toList(),
+            onChanged: (val) {
+              setState(() => _statusFilter = val!);
+            },
+          ),
+        ],
+      ),
+    ),
+
+    // 📋 LIST (your existing code)
+    Expanded(
+      child: RefreshIndicator(
+        onRefresh: _refreshJobs,
+        child: ListView.builder(
+          padding: const EdgeInsets.only(bottom: 80),
+          itemCount: filtered.length,
+          itemBuilder: (context, index) {
+            final j = filtered[index];
+
+            // 🔽 KEEP EVERYTHING BELOW EXACTLY SAME
+
+        
                 final int? jobId = j['id'];
                 final String? jobNo = j['job_no'];
                 final int? partyId = j['party_id'];
@@ -502,9 +562,15 @@ Widget _sortTile(String title, String value) {
                 );    
               },
             ),
-          );
+    ),
+    ),
+  ],
+    );
+      
         },
       ),
     );
   }
+  
 }
+   
