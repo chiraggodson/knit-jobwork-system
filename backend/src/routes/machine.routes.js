@@ -183,7 +183,7 @@ router.get("/", async (req, res) => {
         ,0)::float AS kg_per_hour
 
       FROM machines m
-      ORDER BY m.machine_no;
+      ORDER BY m.machine_no::int;
     `);
 
     const machines = result.rows.map(m => {
