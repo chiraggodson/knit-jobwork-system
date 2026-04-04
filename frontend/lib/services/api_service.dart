@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 
 
 class ApiService {
-  static const baseUrl = "http://192.168.1.31:4000";
+  static const baseUrl = "http://192.168.29.6:4000";
 
 static Future<void> createJob({
   required int partyId,
@@ -374,7 +374,7 @@ static Future addProduction(
   ) async {
     final response = await http.get(
       Uri.parse(
-        "$baseUrl/jobs/filter?party_id=$partyId&fabric_id=$fabricId",
+        "$baseUrl/api/jobs/filter?party_id=$partyId&fabric_id=$fabricId",
       ),
     );
 
@@ -505,7 +505,7 @@ static Future addProduction(
 
   static Future<dynamic> getDispatchRolls(int jobId) async {
   final response = await http.get(
-    Uri.parse("$baseUrl/dispatch/rolls/$jobId"),
+    Uri.parse("$baseUrl/api/dispatch/rolls/$jobId"),
   );
 
   if (response.statusCode == 200) {

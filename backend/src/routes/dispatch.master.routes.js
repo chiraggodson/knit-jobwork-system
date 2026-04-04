@@ -59,8 +59,8 @@ const total_weight = rolls.reduce((sum, r) => {
 
 const masterRes = await client.query(
   `INSERT INTO fabric_dispatch_master
-  (job_id, challan_no, dispatch_date, party_po, design_no, fabric, lot_no, color, count, total_rolls, total_weight)
-  VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+  (job_id, challan_no, dispatch_date, party_po, design_no, fabric, lot_no, color, total_rolls, total_weight)
+  VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
   RETURNING id`,
   [
     job_id,
@@ -71,7 +71,6 @@ const masterRes = await client.query(
     fabric,
     lot_no,
     color,
-    count,
     total_rolls,
     total_weight
   ]
