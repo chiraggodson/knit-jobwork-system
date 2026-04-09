@@ -114,10 +114,9 @@ if (dispatchedQty >= orderQty) {
 
 await client.query(
   `UPDATE job_orders
-   SET dispatched_quantity = $1,
-       status = $2
-   WHERE id = $3`,
-  [dispatchedQty, status, job_id]
+   SET status = $1
+   WHERE id = $2`,
+  [status, job_id]
 );
 
 await client.query("COMMIT");
@@ -159,15 +158,25 @@ const result = await pool.query(`
     d.id,
     d.challan_no,
     TO_CHAR(d.dispatch_date, 'YYYY-MM-DD') as date,
-    j.party_id as party,
-    d.fabric,
+
+    j.job_no,
+
+    p.name as party,
+    f.name as fabric,
+
     d.lot_no,
     d.color,
     d.total_rolls,
     d.total_weight
-  FROM fabric_dispatch_master d
-  LEFT JOIN job_orders j ON j.id = d.job_id
-  ORDER BY d.id DESC
+
+FROM fabric_dispatch_master d
+
+LEFT JOIN job_orders j ON j.id = d.job_id
+LEFT JOIN parties p ON p.id = j.party_id
+LEFT JOIN fabrics f ON f.id = j.fabric_id
+
+ORDER BY d.id DESC;
+  
 `);
 
 res.json(result.rows);
