@@ -438,10 +438,17 @@ class _MachineScreenState extends State<MachineScreen> {
               onTap: () async {
                 Navigator.pop(context);
 
-                await ApiService.updateMachineStatus(
-                  machineId: machine['id'],
-                  status: status,
-                );
+                if (machine['id'] == null) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text("Machine ID missing")),
+  );
+  return;
+}
+
+await ApiService.updateMachineStatus(
+  machine['id'],
+  status,
+);
 
                 loadMachines(); // refresh UI
               },

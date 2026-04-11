@@ -108,7 +108,7 @@ static Future<void> updateMachinePerformance({
 /* ================= UPDATE MACHINE STATUS ================= */
 static Future<void> updateMachineStatus(
     int machineId, String status) async {
-  final res = await http.put(
+    final res = await http.put(
     Uri.parse("$baseUrl/api/machines/$machineId/status"),
     headers: {"Content-Type": "application/json"},
     body: jsonEncode({"status": status}),
@@ -412,18 +412,11 @@ static Future addProduction(
 
   static Future<List<dynamic>> getMachines() async {
     final res = await http.get(Uri.parse("$baseUrl/api/machines"));
-    
-
-
 
     if (res.statusCode != 200) {
       throw Exception("Failed to load machines");
-
-
     }
-    
     return jsonDecode(res.body);
-    
   }
 
   static Future<void> createMachine(String machineNo) async {
