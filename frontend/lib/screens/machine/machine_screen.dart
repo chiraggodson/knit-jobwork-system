@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 
@@ -9,282 +10,267 @@ class MachineScreen extends StatefulWidget {
 }
 
 class _MachineScreenState extends State<MachineScreen> {
-  late Future<List<dynamic>> _machinesFuture;
-  Map<String, dynamic>? selectedMachine;
+
+  List machines = [];
+  bool loading = true;
+
+  int running = 0;
+  int stopped = 0;
+  int alerts = 0;
+
+  Timer? refreshTimer;
+
+  Map? selectedMachine;
+
+  bool showPanel = false;
+  double panelWidth = 350;
 
   @override
   void initState() {
     super.initState();
-    _loadMachines();
+    loadMachines();
+
+    refreshTimer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) => loadMachines(),
+    );
   }
 
-  void _loadMachines() {
-    _machinesFuture = ApiService.getMachines();
+  @override
+  void dispose() {
+    refreshTimer?.cancel();
+    super.dispose();
   }
 
-  Future<void> _refresh() async {
-    setState(() {
-      _loadMachines();
-    });
+  Future<void> loadMachines() async {
+    try {
+      final data = await ApiService.getMachines();
+
+      int run = 0;
+      int stop = 0;
+      int warn = 0;
+
+      for (var m in data) {
+        if (m["status"] == "RUNNING") run++;
+        if (m["status"] == "STOPPED") stop++;
+        if (m["status"] == "YARN_REQUIRED") warn++;
+      }
+
+      setState(() {
+        machines = data;
+        running = run;
+        stopped = stop;
+        alerts = warn;
+        loading = false;
+      });
+
+    } catch (e) {
+      debugPrint(e.toString());
+    }
   }
 
-  Color _statusColor(String status) {
+  Map? getMachine(int machineNo) {
+    try {
+      return machines.firstWhere(
+        (m) => int.parse(m["machine_no"].toString()) == machineNo
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Color statusColor(String status) {
     switch (status) {
       case "RUNNING":
         return Colors.greenAccent;
+      case "STOPPED":
+        return Colors.redAccent;
       case "CLEANING":
         return Colors.orangeAccent;
-      case "IDLE":
-        return Colors.blueGrey;
-      case "YARN_NEEDED":
-        return Colors.purpleAccent;
-      case "SETTING":
-        return Colors.tealAccent;
       default:
         return Colors.grey;
     }
   }
 
- double _calculateEstimated24(Map machine) {
-  final rpm =
-      double.tryParse(machine['rpm']?.toString() ?? "0") ?? 0;
-
-  final counter =
-      double.tryParse(machine['counter']?.toString() ?? "1") ?? 1;
-
-  if (rpm == 0 || counter == 0) return 0;
-
-  final totalRotations24h = rpm * 60 * 24;
-  final production24h = totalRotations24h / counter;
-
-  return production24h;
-}
-
-double _calculateEstimatedKg24(Map machine) {
-  final productionUnits = _calculateEstimated24(machine);
-
-  final rollSize =
-      double.tryParse(machine['roll_size']?.toString() ?? "0") ?? 0;
-
-  if (rollSize == 0) return 0;
-
-  return productionUnits * rollSize;
-}
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF1F1B2E),
-      body: FutureBuilder<List<dynamic>>(
-        future: _machinesFuture,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
 
-          final machines = snapshot.data!;
-          if (machines.isEmpty) {
-            return const Center(child: Text("No machines"));
-          }
+    if (loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-          selectedMachine ??= machines.first;
+    return Stack(
+      children: [
 
-          return Row(
-            children: [
+        /// MAIN DASHBOARD (FULL WIDTH)
+        Container(
+          color: const Color(0xFF121212),
+          padding: const EdgeInsets.all(24),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
 
-              /// LEFT SIDEBAR
-              Container(
-                width: 260,
-                color: const Color(0xFF25203A),
-                child: Column(
+                const Text(
+                  "Factory Command Center",
+                  style: TextStyle(fontSize: 26,fontWeight: FontWeight.bold),
+                ),
+
+                const SizedBox(height: 30),
+
+                /// METRICS
+                Row(
                   children: [
-                    const SizedBox(height: 20),
-                    const Text(
-                      "MANUFACTURING UNIT",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.cyanAccent,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Expanded(
-                      child: ListView.builder(
-                        itemCount: machines.length,
-                        itemBuilder: (context, index) {
-                          final m = machines[index];
-                          final isSelected =
-                              m['id'] == selectedMachine!['id'];
-
-                          return ListTile(
-                            selected: isSelected,
-                            selectedTileColor:
-                                Colors.cyan.withOpacity(0.15),
-                            title: Text(
-                              "Machine ${m['machine_no']}",
-                              style: TextStyle(
-                                color: isSelected
-                                    ? Colors.cyanAccent
-                                    : Colors.white,
-                              ),
-                            ),
-                            subtitle: Text(
-                              m['status'],
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                            onTap: () {
-                              setState(() {
-                                selectedMachine = m;
-                              });
-                            },
-                          );
-                        },
-                      ),
-                    ),
+                    _metricCard("Running", running, Colors.greenAccent),
+                    _metricCard("Stopped", stopped, Colors.redAccent),
+                    _metricCard("Alerts", alerts, Colors.orangeAccent),
+                    _metricCard("Total", machines.length, Colors.cyanAccent),
                   ],
                 ),
-              ),
 
-              /// MAIN PANEL
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                const SizedBox(height: 40),
 
-                      _headerCard(selectedMachine!),
+                _buildFloor("Ground Floor",
+                    [1,2,3,4,5,6,7,8,9,10,11,12]),
 
-                      const SizedBox(height: 20),
+                const SizedBox(height: 30),
 
-                      /// FIRST ROW
-                      Row(
-                        children: [
-                          _bigCard(
-                              "Est. Kg (24h)",
-                              _calculateEstimatedKg24(selectedMachine!)
-                                  .toStringAsFixed(2),
-                              Colors.cyanAccent,
-                            ),
+                _buildFloor("Second Floor",
+                    [13,14,15,16,17,18,19,20,21,26,27,28,29]),
 
-                          _bigCard(
-                            "Est. (24h)",
-                            _calculateEstimated24(selectedMachine!)
-                                .toStringAsFixed(2),
-                            Colors.orangeAccent,
-                          ),
+                const SizedBox(height: 30),
 
-                          _bigCard(
-                            "Actual Production",
-                            "${selectedMachine!['actual_production']?.toStringAsFixed(1) ?? "0"} kg",
-                            Colors.greenAccent,
-                          ),
+                _buildFloor("Third Floor",
+                    [22,23,24,25,30,31]),
+              ],
+            ),
+          ),
+        ),
 
-                          _bigCard(
-                            "Design No",
-                            selectedMachine!['design_no'] ?? "-",
-                            Colors.purpleAccent,
-                          ),
-                        ],
-                      ),
+        /// RIGHT PANEL (OVERLAY)
+        if (showPanel)
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            child: Row(
+              children: [
 
-                      const SizedBox(height: 20),
-
-                      /// SECOND ROW
-                      Row(
-                        children: [
-                          _miniCard(
-                            "RPM",
-                            selectedMachine!['rpm']?.toString() ?? "0",
-                          ),
-                          _miniCard(
-                            "Counter",
-                            selectedMachine!['counter']?.toString() ?? "0",
-                          ),
-                          _miniCard(
-                            "Roll Size",
-                            selectedMachine!['roll_size'] != null &&
-                                    selectedMachine!['roll_size'] != 0
-                                ? "${selectedMachine!['roll_size']} kg"
-                                : "-",
-                          ),
-                          _miniCard(
-                            "Status",
-                            selectedMachine!['status'] ?? "-",
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2A243F),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: const Center(
-                            child: Text(
-                              "Production Graph Area",
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                /// DRAG HANDLE
+                GestureDetector(
+                  onHorizontalDragUpdate: (details) {
+                    setState(() {
+                      panelWidth -= details.delta.dx;
+                      if (panelWidth < 250) panelWidth = 250;
+                      if (panelWidth > 600) panelWidth = 600;
+                    });
+                  },
+                  child: Container(
+                    width: 6,
+                    color: Colors.grey.shade800,
+                    child: const Center(
+                      child: Icon(Icons.drag_indicator, size: 16),
+                    ),
                   ),
                 ),
-              ),
-            ],
-          );
-        },
-      ),
+
+                /// PANEL
+                Container(
+                  width: panelWidth,
+                  color: const Color(0xFF1A1A1A),
+                  padding: const EdgeInsets.all(20),
+
+                  child: selectedMachine == null
+                      ? const Text("No Machine")
+                      : _buildDetails(selectedMachine!),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 
-  Widget _headerCard(Map m) {
+  Widget _buildFloor(String title, List<int> machinesList) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+
+        Text(title,
+            style: const TextStyle(fontSize: 20,fontWeight: FontWeight.bold)),
+
+        const SizedBox(height: 16),
+
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: machinesList.length,
+
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 4,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 0.95,
+          ),
+
+          itemBuilder: (context, index) {
+
+            int machineNumber = machinesList[index];
+            final m = getMachine(machineNumber);
+
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  selectedMachine = m;
+                  showPanel = true;
+                });
+              },
+              child: _machineCard(machineNumber, m),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _machineCard(int machineNo, Map? m) {
+
+    final status = m?["status"] ?? "STOPPED";
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(12),
+
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade800),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Machine ${m['machine_no']}",
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+
+          Text("M-$machineNo",
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+
+          const SizedBox(height: 6),
+
+          Text("RPM: ${m?['rpm'] ?? 0}",
+              style: const TextStyle(fontSize: 11)),
+
+          Text("Job: ${m?['job_no'] ?? "-"}",
+              style: const TextStyle(fontSize: 11)),
+
+          const Spacer(),
+
           Row(
             children: [
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00BFA6),
-                  foregroundColor: Colors.black,
-                ),
-                icon: const Icon(Icons.speed),
-                label: const Text("Update RPM"),
-                onPressed: () => _showPerformanceDialog(m),
-              ),
-              const SizedBox(width: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 6),
-                decoration: BoxDecoration(
-                  color: _statusColor(m['status']),
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: Text(
-                  m['status'],
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+              Icon(Icons.circle, size: 10, color: statusColor(status)),
+              const SizedBox(width: 6),
+              Text(status,
+                  style: TextStyle(
+                      color: statusColor(status),
+                      fontSize: 12)),
             ],
           ),
         ],
@@ -292,7 +278,76 @@ double _calculateEstimatedKg24(Map machine) {
     );
   }
 
+  Widget _buildDetails(Map m) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text("Machine ${m['machine_no']}",
+                style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold)),
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () {
+                setState(() {
+                  showPanel = false;
+                });
+              },
+            )
+          ],
+        ),
+
+        const SizedBox(height: 10),
+
+        Text("Status: ${m['status']}"),
+        Text("RPM: ${m['rpm']}"),
+        Text("Counter: ${m['counter']}"),
+        Text("Roll Size: ${m['roll_size']} kg"),
+        Text("Job: ${m['job_no']}"),
+
+        const SizedBox(height: 20),
+
+        ElevatedButton(
+          onPressed: () => _showPerformanceDialog(m),
+          child: const Text("Update Performance"),
+        ),
+      ],
+    );
+  }
+
+  Widget _metricCard(String title, int value, Color color) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            Text("$value",
+                style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: color)),
+            const SizedBox(height: 6),
+            Text(title,
+                style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey)),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _showPerformanceDialog(Map machine) async {
+
     final rpmController =
         TextEditingController(text: machine['rpm']?.toString() ?? "0");
 
@@ -305,106 +360,40 @@ double _calculateEstimatedKg24(Map machine) {
     await showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        title: const Text("Update Machine Performance"),
+        title: const Text("Update Machine"),
+
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: rpmController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: "RPM"),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: counterController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: "Counter"),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: rollSizeController,
-              keyboardType: TextInputType.number,
-              decoration:
-                  const InputDecoration(labelText: "Roll Size (kg)"),
-            ),
+            TextField(controller: rpmController),
+            TextField(controller: counterController),
+            TextField(controller: rollSizeController),
           ],
         ),
+
         actions: [
+
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text("Cancel"),
           ),
+
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00BFA6),
-              foregroundColor: Colors.black,
-            ),
             onPressed: () async {
+
               await ApiService.updateMachinePerformance(
                 machineId: machine['id'],
                 rpm: int.tryParse(rpmController.text) ?? 0,
                 counter: int.tryParse(counterController.text) ?? 0,
-                rollSize:
-                    double.tryParse(rollSizeController.text) ?? 0,
+                rollSize: double.tryParse(rollSizeController.text) ?? 0,
               );
+
               Navigator.pop(context);
-              _refresh();
+              loadMachines();
             },
             child: const Text("Save"),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _bigCard(String title, String value, Color color) {
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.only(right: 16),
-        padding: const EdgeInsets.symmetric(vertical: 22),
-        decoration: BoxDecoration(
-          color: const Color(0xFF2A243F),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Column(
-          children: [
-            Text(title,
-                style: const TextStyle(
-                    fontSize: 12, color: Colors.grey)),
-            const SizedBox(height: 14),
-            Text(value,
-                style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: color)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _miniCard(String title, String value) {
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.only(right: 16),
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: const Color(0xFF2A243F),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Column(
-          children: [
-            Text(title,
-                style: const TextStyle(
-                    fontSize: 11, color: Colors.grey)),
-            const SizedBox(height: 10),
-            Text(value,
-                style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold)),
-          ],
-        ),
       ),
     );
   }
