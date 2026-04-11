@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 
 
 class ApiService {
-  static const baseUrl = "http://192.168.29.6:4000";
+  static const baseUrl = "http://192.168.1.31:4000";
 
 static Future<void> createJob({
   required int partyId,
@@ -412,10 +412,18 @@ static Future addProduction(
 
   static Future<List<dynamic>> getMachines() async {
     final res = await http.get(Uri.parse("$baseUrl/api/machines"));
+    
+
+
+
     if (res.statusCode != 200) {
       throw Exception("Failed to load machines");
+
+
     }
+    
     return jsonDecode(res.body);
+    
   }
 
   static Future<void> createMachine(String machineNo) async {

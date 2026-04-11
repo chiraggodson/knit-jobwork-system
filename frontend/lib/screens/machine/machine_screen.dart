@@ -311,10 +311,25 @@ class _MachineScreenState extends State<MachineScreen> {
 
         const SizedBox(height: 20),
 
-        ElevatedButton(
-          onPressed: () => _showPerformanceDialog(m),
-          child: const Text("Update Performance"),
-        ),
+        Column(
+  crossAxisAlignment: CrossAxisAlignment.stretch,
+  children: [
+    ElevatedButton(
+      onPressed: () => _showPerformanceDialog(m),
+      child: const Text("Update Performance"),
+    ),
+
+    const SizedBox(height: 12),
+
+    ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: statusColor(m['status']),
+      ),
+      onPressed: () => _changeStatus(m),
+      child: const Text("Change Status"),
+    ),
+  ],
+)
       ],
     );
   }
@@ -397,4 +412,58 @@ class _MachineScreenState extends State<MachineScreen> {
       ),
     );
   }
+
+  Future<void> _changeStatus(Map machine) async {
+  final statuses = [
+    "RUNNING",
+    "STOPPED",
+    "CLEANING",
+    "YARN_REQUIRED",
+  ];
+
+  await showModalBottomSheet(
+    context: context,
+    builder: (_) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: statuses.map((status) {
+            return ListTile(
+              leading: Icon(
+                Icons.circle,
+                color: statusColor(status),
+              ),
+              title: Text(status),
+              onTap: () async {
+                Navigator.pop(context);
+
+                await ApiService.updateMachineStatus(
+                  machineId: machine['id'],
+                  status: status,
+                );
+
+                loadMachines(); // refresh UI
+              },
+            );
+          }).toList(),
+        ),
+      );
+    },
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

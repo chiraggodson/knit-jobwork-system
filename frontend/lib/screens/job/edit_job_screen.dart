@@ -36,7 +36,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
   List<Map<String, dynamic>> selectedYarns = [];
 
   bool loading = false;
-  bool machineLoading = true;
+  bool pageLoading = true;
 
   File? fabricImage;
   String? existingImageUrl;
@@ -47,8 +47,9 @@ class _EditJobScreenState extends State<EditJobScreen> {
   void initState() {
     super.initState();
     _loadData();
+    
   }
-
+  
   Future<void> pickImage(ImageSource source) async {
     final picked = await picker.pickImage(
       source: source,
@@ -98,10 +99,11 @@ class _EditJobScreenState extends State<EditJobScreen> {
       final m = await ApiService.getMachines();
       final f = await ApiService.getFabrics();
       final y = await ApiService.getYarnMaster();
-
+      
       final jobDetails =
           await ApiService.getJobDetail(widget.job['job_no']);
-
+print("MACHINES MASTER ====> $machines");
+print("JOB MACHINES ====> ${jobDetails['machines']}");
       setState(() {
         parties = p;
         machines = m;
@@ -114,10 +116,14 @@ class _EditJobScreenState extends State<EditJobScreen> {
         _gsm.text = jobDetails['gsm'].toString();
         _quantity.text = jobDetails['order_quantity'].toString();
 
-        existingImageUrl = jobDetails['image_url'];
+        // ✅ FIX IMAGE URL
+        existingImageUrl = jobDetails['image_url'] != null
+            ? "${ApiService.baseUrl}/${jobDetails['image_url']}"
+            : null;
 
+        // ✅ FIX MACHINE MAPPING
         selectedMachineIds = (jobDetails['machines'] as List? ?? [])
-            .map<int>((m) => m is int ? m : m['id'] as int)
+            .map<int>((m) => m['machine_id'] ?? m['id'])
             .toList();
 
         if (selectedMachineIds.length <= 1) {
@@ -129,13 +135,27 @@ class _EditJobScreenState extends State<EditJobScreen> {
         }
 
         selectedYarns = (jobDetails['yarns'] as List? ?? [])
-            .map<Map<String, dynamic>>((y) => {
-                  'yarn_id': y['yarn_id'],
-                  'percentage': y['percentage'] ?? 0,
-                })
-            .toList();
+    .map<Map<String, dynamic>>((y) {
+      int? matchedId;
 
-        machineLoading = false;
+      // 🔥 match yarn_name with master list
+      final match = yarns.firstWhere(
+        (ym) => ym['yarn_name'] == y['yarn_name'],
+        orElse: () => null,
+      );
+
+      if (match != null) {
+        matchedId = match['id'];
+      }
+
+      return {
+        'yarn_id': matchedId,
+        'percentage': y['mix_percent'] ?? 0,
+      };
+    })
+    .toList();
+
+        pageLoading = false;
       });
     } catch (e) {
       ScaffoldMessenger.of(context)
@@ -210,10 +230,6 @@ class _EditJobScreenState extends State<EditJobScreen> {
   }
 
   Widget _machineSelector() {
-    if (machineLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
     if (!isMultiMachine) {
       return DropdownButtonFormField<int>(
         value: singleMachineId,
@@ -299,70 +315,104 @@ class _EditJobScreenState extends State<EditJobScreen> {
   }
 
   Widget _yarnSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Yarns Required",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
-        ...selectedYarns.asMap().entries.map((entry) {
-          int index = entry.key;
-          var yarnItem = entry.value;
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text(
+        "Yarns Required",
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      ),
+      const SizedBox(height: 12),
 
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    value: yarnItem['yarn_id'],
-                    decoration: const InputDecoration(
-                      labelText: "Yarn",
-                      border: OutlineInputBorder(),
-                    ),
-                    items: yarns.map<DropdownMenuItem<int>>((y) {
-                      return DropdownMenuItem(
-                        value: y['id'],
-                        child: Text(y['yarn_name']),
-                      );
-                    }).toList(),
-                    onChanged: (v) {
-                      setState(() {
-                        selectedYarns[index]['yarn_id'] = v;
-                      });
-                    },
+      ...selectedYarns.asMap().entries.map((entry) {
+        int index = entry.key;
+        var yarnItem = entry.value;
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
+            children: [
+              // 🔹 Yarn Dropdown
+              Expanded(
+                flex: 3,
+                child: DropdownButtonFormField<int>(
+                  value: yarnItem['yarn_id'],
+                  decoration: const InputDecoration(
+                    labelText: "Yarn",
+                    border: OutlineInputBorder(),
                   ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () {
+                  items: yarns.map<DropdownMenuItem<int>>((y) {
+                    return DropdownMenuItem(
+                      value: y['id'],
+                      child: Text(y['yarn_name']),
+                    );
+                  }).toList(),
+                  onChanged: (v) {
                     setState(() {
-                      selectedYarns.removeAt(index);
+                      selectedYarns[index]['yarn_id'] = v;
                     });
                   },
-                )
-              ],
-            ),
-          );
-        }),
-        TextButton.icon(
-          onPressed: () {
-            setState(() {
-              selectedYarns.add({'yarn_id': null, 'percentage': 0});
-            });
-          },
-          icon: const Icon(Icons.add),
-          label: const Text("Add Yarn"),
-        ),
-      ],
-    );
-  }
+                ),
+              ),
 
+              const SizedBox(width: 8),
+
+              // 🔹 Percentage Field
+              Expanded(
+                flex: 2,
+                child: TextFormField(
+                  initialValue:
+                      (yarnItem['percentage'] ?? 0).toString(),
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: "%",
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (val) {
+                    setState(() {
+                      selectedYarns[index]['percentage'] =
+                          double.tryParse(val) ?? 0;
+                    });
+                  },
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              // 🔹 Delete Button
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: () {
+                  setState(() {
+                    selectedYarns.removeAt(index);
+                  });
+                },
+              )
+            ],
+          ),
+        );
+      }),
+
+      TextButton.icon(
+        onPressed: () {
+          setState(() {
+            selectedYarns.add({'yarn_id': null, 'percentage': 0});
+          });
+        },
+        icon: const Icon(Icons.add),
+        label: const Text("Add Yarn"),
+      ),
+    ],
+  );
+}
   @override
   Widget build(BuildContext context) {
+    if (pageLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text("Edit Job ${widget.job['job_no']}"),
@@ -395,8 +445,16 @@ class _EditJobScreenState extends State<EditJobScreen> {
                 onChanged: (val) {
                   setState(() {
                     isMultiMachine = val;
-                    selectedMachineIds.clear();
-                    singleMachineId = null;
+
+                    if (val) {
+                      selectedMachineIds = singleMachineId != null
+                          ? [singleMachineId!]
+                          : [];
+                    } else {
+                      singleMachineId = selectedMachineIds.isNotEmpty
+                          ? selectedMachineIds.first
+                          : null;
+                    }
                   });
                 },
               ),
