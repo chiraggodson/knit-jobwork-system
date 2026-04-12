@@ -17,7 +17,7 @@ void main() async {
  
   await AppConfig.load();
 
-if (!AppConfig.requireLogin); {
+if (!AppConfig.requireLogin) {
   UserSession.initDevSession(); // 🔥 THIS FIXES YOUR ISSUE
 }
   runApp(const KnitApp());

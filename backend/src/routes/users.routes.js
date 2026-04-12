@@ -1,5 +1,6 @@
 import express from "express";
 import { authMiddleware, adminOnly } from "../middleware/auth.js";
+import bcrypt from "bcryptjs";
 import { pool } from "../db.js";
 
 const router = express.Router();
@@ -27,6 +28,7 @@ router.get("/", authMiddleware, adminOnly, async (req, res) => {
 router.post("/", authMiddleware, adminOnly, async (req, res) => {
 
   const { name, username, password, role } = req.body;
+  const hashedPassword = await bcrypt.hash(password, 10);
 
   try {
 

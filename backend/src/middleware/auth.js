@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 
-const SECRET = "atlas_secret_key";
+const SECRET = process.env.JWT_SECRET;
 
 export function authMiddleware(req, res, next) {
   try {
