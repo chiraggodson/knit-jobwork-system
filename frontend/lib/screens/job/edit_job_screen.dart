@@ -47,6 +47,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
   void initState() {
     super.initState();
     _loadData();
+    setState(() {});
     
   }
   
@@ -99,10 +100,10 @@ class _EditJobScreenState extends State<EditJobScreen> {
       final m = await ApiService.getMachines();
       final f = await ApiService.getFabrics();
       final y = await ApiService.getYarnMaster();
-      
+      print("MACHINES MASTER ====> $machines");
       final jobDetails =
           await ApiService.getJobDetail(widget.job['job_no']);
-print("MACHINES MASTER ====> $machines");
+
 print("JOB MACHINES ====> ${jobDetails['machines']}");
       setState(() {
         parties = p;
@@ -123,8 +124,14 @@ print("JOB MACHINES ====> ${jobDetails['machines']}");
 
         // ✅ FIX MACHINE MAPPING
         selectedMachineIds = (jobDetails['machines'] as List? ?? [])
-            .map<int>((m) => m['machine_id'] ?? m['id'])
-            .toList();
+        .map<int>((m) {
+          if (m is Map<String, dynamic>) {
+            return m['id'] ?? m['machine_id'];
+          }
+          return m; // fallback if it's already int
+        })
+        .whereType<int>()
+        .toList();
 
         if (selectedMachineIds.length <= 1) {
           isMultiMachine = false;
