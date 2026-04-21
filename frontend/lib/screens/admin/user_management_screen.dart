@@ -1,6 +1,4 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import '../../services/api_service.dart';
 
 class UserManagementScreen extends StatefulWidget {
@@ -21,41 +19,52 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   String role = "supervisor";
 
   Future fetchUsers() async {
+    try {
+      final data = await ApiService.getUsers();
 
-    final response = await http.get(Uri.parse("${ApiService.baseUrl}/api/users"));
-
-    setState(() {
-      users = jsonDecode(response.body);
-    });
+      setState(() {
+        users = data;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
   }
 
   Future addUser() async {
+    try {
+      await ApiService.createUser(
+        name: nameController.text,
+        username: usernameController.text,
+        password: passwordController.text,
+        role: role,
+      );
 
-    await http.post(
-      Uri.parse("${ApiService.baseUrl}/api/users"),
-      headers: {"Content-Type":"application/json"},
-      body: jsonEncode({
-        "name": nameController.text,
-        "username": usernameController.text,
-        "password": passwordController.text,
-        "role": role
-      }),
-    );
+      nameController.clear();
+      usernameController.clear();
+      passwordController.clear();
 
-    nameController.clear();
-    usernameController.clear();
-    passwordController.clear();
-
-    fetchUsers();
+      fetchUsers();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
   }
 
   Future deleteUser(int id) async {
-
-    await http.delete(
-      Uri.parse("${ApiService.baseUrl}/api/users/$id"),
-    );
-
-    fetchUsers();
+    try {
+      await ApiService.deleteUser(id);
+      fetchUsers();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
   }
 
   @override

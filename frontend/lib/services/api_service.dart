@@ -128,6 +128,7 @@ if (token != null) {
         "roll_size": rollSize,
       }),
     );
+    */
   }
 
   /* ================= UPDATE MACHINE STATUS ================= */
@@ -156,33 +157,21 @@ if (token != null) {
     required List<Map<String, dynamic>> yarns,
     File? image,
   }) async {
-    var request = http.MultipartRequest(
-      'PUT',
+    final res = await http.put(
       Uri.parse("$baseUrl/api/jobs/$jobId"),
+      headers: await getHeaders(),
+      body: jsonEncode({
+        "party_id": partyId,
+        "machine_ids": machineIds,
+        "fabric_id": fabricId,
+        "gsm": gsm,
+        "order_quantity": orderQuantity,
+        "yarns": yarns,
+      }),
     );
 
-    final token = await getToken();
-if (token != null) {
-  request.headers['Authorization'] = 'Bearer $token';
-}
-
-    request.fields['party_id'] = partyId.toString();
-    request.fields['machine_ids'] = jsonEncode(machineIds);
-    request.fields['fabric_id'] = fabricId.toString();
-    request.fields['gsm'] = gsm.toString();
-    request.fields['order_quantity'] = orderQuantity.toString();
-    request.fields['yarns'] = jsonEncode(yarns);
-
-    if (image != null) {
-      request.files.add(
-        await http.MultipartFile.fromPath('image', image.path),
-      );
-    }
-
-    final res = await request.send();
-
     if (res.statusCode < 200 || res.statusCode >= 300) {
-      throw Exception("Job update failed");
+      throw Exception("Job update failed: ${res.body}");
     }
   }
 
@@ -218,7 +207,7 @@ if (token != null) {
 
   static Future<List<dynamic>> getPartyLedger() async {
     final res = await http.get(
-      Uri.parse("$baseUrl/api/yarn/yarn-ledger"),
+      Uri.parse("$baseUrl/api/yarn/party-summary"),
       headers: await getHeaders(), // ✅ FIXED
     );
 
@@ -226,7 +215,18 @@ if (token != null) {
       throw Exception("Failed to load party ledger");
     }
 
-    return jsonDecode(res.body);
+    final data = jsonDecode(res.body) as List;
+
+    return data
+        .map((p) => {
+              "party_id": p["id"],
+              "party_name": p["name"],
+              "yarn_inward": 0,
+              "yarn_issued": 0,
+              "yarn_returned": 0,
+              "balance": p["balance"],
+            })
+        .toList();
   }
 
   static Future<List<dynamic>> getPartyYarnSummary() async {
@@ -291,7 +291,7 @@ if (token != null) {
 
   static Future<List<dynamic>> getStockByParty(int partyId) async {
     final res = await http.get(
-      Uri.parse("$baseUrl/api/yarn/stock-by-party/$partyId"),
+      Uri.parse("$baseUrl/api/yarn/inward/$partyId"),
       headers: await getHeaders(), // ✅ FIXED
     );
 
@@ -405,12 +405,22 @@ if (token != null) {
     int fabricId,
   ) async {
     final response = await http.get(
-      Uri.parse("$baseUrl/api/jobs/filter?party_id=$partyId&fabric_id=$fabricId"),
+      Uri.parse("$baseUrl/api/jobs"),
       headers: await getHeaders(), // ✅ FIXED
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      final jobs = jsonDecode(response.body) as List;
+
+      return jobs.where((j) {
+        final jobPartyId = int.tryParse(j["party_id"]?.toString() ?? "");
+        final jobFabricId = int.tryParse(j["fabric_id"]?.toString() ?? "");
+        final status = j["status"]?.toString();
+
+        return jobPartyId == partyId &&
+            jobFabricId == fabricId &&
+            status == "OPEN";
+      }).toList();
     } else {
       throw Exception("Failed to load jobs");
     }
@@ -480,7 +490,7 @@ if (token != null) {
 
   static Future<List<dynamic>> getYarnStockByParty(int partyId) async {
     final res = await http.get(
-      Uri.parse("$baseUrl/api/yarn/stock-by-party/$partyId"),
+      Uri.parse("$baseUrl/api/yarn/inward/$partyId"),
       headers: await getHeaders(), // ✅ FIXED
     );
 
@@ -509,10 +519,13 @@ if (token != null) {
   /* ================= Delete Job ================= */
 
   static Future<void> deleteJob(int id) async {
-    await http.delete(
-      Uri.parse("$baseUrl/api/jobs/$id"),
+    throw UnsupportedError("Backend route DELETE /api/jobs/:id is not available");
+    /*
       headers: await getHeaders(), // ✅ FIXED
     );
+  }
+
+    */
   }
 
   /* ================= JOB YARN HISTORY ================= */
@@ -549,7 +562,7 @@ if (token != null) {
 
   static Future<dynamic> getDispatchRolls(int jobId) async {
     final response = await http.get(
-      Uri.parse("$baseUrl/api/dispatch/rolls/$jobId"),
+      Uri.parse("$baseUrl/api/dispatch/job/$jobId"),
       headers: await getHeaders(), // ✅ FIXED
     );
 
@@ -563,11 +576,18 @@ if (token != null) {
   static Future<void> dispatchRolls({
     required int jobId,
     required List<Map<String, dynamic>> rolls,
+    required String challanNo,
+    String? dispatchDate,
   }) async {
     final res = await http.post(
       Uri.parse("$baseUrl/api/dispatch"),
       headers: await getHeaders(), // ✅ FIXED
-      body: jsonEncode({"job_id": jobId, "rolls": rolls}),
+      body: jsonEncode({
+        "job_id": jobId,
+        "rolls": rolls,
+        "challan_no": challanNo,
+        if (dispatchDate != null) "dispatch_date": dispatchDate,
+      }),
     );
 
     if (res.statusCode < 200 || res.statusCode >= 300) {
@@ -591,7 +611,7 @@ if (token != null) {
   static Future<void> uploadParties(File file) async {
     var request = http.MultipartRequest(
       'POST',
-      Uri.parse("$baseUrl/api/parties/upload"),
+      Uri.parse("$baseUrl/api/parties/upload/upload"),
     );
 
     final token = await getToken();
@@ -610,9 +630,8 @@ if (token != null) {
     }
   }
 
-  static void downloadPartyTemplate() async {
-    final url = "$baseUrl/api/templates/party-template";
-    await http.get(Uri.parse(url), headers: await getHeaders());
+  static Future<void> downloadPartyTemplate() async {
+    throw UnsupportedError("Backend route GET /api/templates/party-template is not available");
   }
 
   static Future<List<dynamic>> getJobIssuedYarns(int jobId) async {
@@ -630,12 +649,17 @@ if (token != null) {
 
   static Future<void> addSetting({
     required int jobId,
+    required int yarnLotId,
     required double quantity,
   }) async {
     final res = await http.post(
       Uri.parse("$baseUrl/api/yarn/setting"),
       headers: await getHeaders(), // ✅ FIXED
-      body: jsonEncode({"job_id": jobId, "quantity": quantity}),
+      body: jsonEncode({
+        "job_id": jobId,
+        "yarn_lot_id": yarnLotId,
+        "quantity": quantity,
+      }),
     );
 
     if (res.statusCode < 200 || res.statusCode >= 300) {
@@ -692,6 +716,65 @@ if (token != null) {
       return data.where((j) => j['status'] == 'OPEN').toList();
     } else {
       throw Exception("Failed to load jobs");
+    }
+  }
+
+  static Future<List<dynamic>> getPartyYarnLedger(int partyId) async {
+    final res = await http.get(
+      Uri.parse("$baseUrl/api/yarn/ledger-report/$partyId"),
+      headers: await getHeaders(),
+    );
+
+    if (res.statusCode != 200) {
+      throw Exception("Failed to load party yarn ledger");
+    }
+
+    return jsonDecode(res.body);
+  }
+
+  static Future<List<dynamic>> getUsers() async {
+    final res = await http.get(
+      Uri.parse("$baseUrl/api/users"),
+      headers: await getHeaders(),
+    );
+
+    if (res.statusCode != 200) {
+      throw Exception("Failed to load users: ${res.body}");
+    }
+
+    return jsonDecode(res.body);
+  }
+
+  static Future<void> createUser({
+    required String name,
+    required String username,
+    required String password,
+    required String role,
+  }) async {
+    final res = await http.post(
+      Uri.parse("$baseUrl/api/users"),
+      headers: await getHeaders(),
+      body: jsonEncode({
+        "name": name,
+        "username": username,
+        "password": password,
+        "role": role,
+      }),
+    );
+
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception("Failed to create user: ${res.body}");
+    }
+  }
+
+  static Future<void> deleteUser(int id) async {
+    final res = await http.delete(
+      Uri.parse("$baseUrl/api/users/$id"),
+      headers: await getHeaders(),
+    );
+
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception("Failed to delete user: ${res.body}");
     }
   }
 }

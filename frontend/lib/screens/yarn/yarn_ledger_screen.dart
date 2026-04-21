@@ -1,6 +1,4 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:knit_jobwork_app/services/api_service.dart';
 
 class YarnLedgerScreen extends StatefulWidget {
@@ -43,29 +41,12 @@ setState(() => loading = true);
 
 
 try {
-  final uri = Uri.parse(
-    "${ApiService.baseUrl}/api/yarn/ledger-report/${widget.partyId}",
-  );
+  final data = await ApiService.getPartyYarnLedger(widget.partyId);
 
-  final res = await http.get(uri);
-
-  print("STATUS: ${res.statusCode}");
-  print("BODY: ${res.body}");
-
-  if (res.statusCode == 200) {
-    final data = jsonDecode(res.body);
-
-    if (data is List) {
-      setState(() {
-        ledger = data;
-        loading = false;
-      });
-    } else {
-      throw Exception("Response is not a List");
-    }
-  } else {
-    throw Exception("Server error ${res.statusCode}");
-  }
+  setState(() {
+    ledger = data;
+    loading = false;
+  });
 } catch (e) {
   print("LEDGER ERROR: $e");
 
@@ -125,13 +106,15 @@ const SizedBox(height: 10),
                         final returned = parseNum(row['returned']);
 
                         final issued = parseNum(row['issued']);
+                        final outward = parseNum(row['outward']);
                         final waste = parseNum(row['waste']);
                         final partyReturn = parseNum(row['party_return']);
                         final setting = parseNum(row['setting']);
 
                         final totalIn = inward + returned;
-                        final totalOut =
-                            issued + waste + partyReturn + setting;
+                        final totalOut = outward > 0
+                            ? outward
+                            : issued + waste + partyReturn + setting;
 
                         return DataRow(cells: [
                           DataCell(Text(formatDate(row['date']))),

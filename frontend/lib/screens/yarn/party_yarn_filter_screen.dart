@@ -1,6 +1,4 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:knit_jobwork_app/services/api_service.dart';
 import '../yarn/yarn_ledger_screen.dart';
 
@@ -33,13 +31,10 @@ fetchParties();
 }
 
 Future<void> fetchParties() async {
-final res = await http.get(
-Uri.parse("${ApiService.baseUrl}/api/parties"),
-);
-
+final data = await ApiService.getParties();
 
 setState(() {
-  parties = jsonDecode(res.body);
+  parties = data;
 });
 
 

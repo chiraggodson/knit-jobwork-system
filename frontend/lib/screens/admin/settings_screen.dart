@@ -98,7 +98,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: const Text("Download Parties Template"),
                 onTap: () {
                   Navigator.pop(context);
-                  ApiService.downloadPartyTemplate();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Parties template route not connected yet")),
+                  );
                 },
               ),
               ListTile(
