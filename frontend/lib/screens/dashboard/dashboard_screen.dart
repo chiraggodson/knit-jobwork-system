@@ -8,8 +8,9 @@ import '../yarn/party_yarn_screen.dart';
 import '../job/job_summary_screen.dart';
 import '../../models/user_session.dart';
 import '../admin/product_manager_screen.dart';
-import '../dispatch/dispatch_screen.dart'; // ✅ ADDED
+import '../dispatch/dispatch_screen.dart';
 import '../dispatch/dispatch_list_screen.dart';
+import '../employees/employee_screen.dart'; // ✅ ADD THIS
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -48,7 +49,11 @@ class _DashboardState extends State<Dashboard> {
       if (s.has("VIEW_REPORTS"))
         const _NavItem(Icons.bar_chart, "Reports"),
 
-      // ✅ ADDED DISPATCH TAB
+      // ✅ NEW EMPLOYEES TAB
+      if (s.has("VIEW_EMPLOYEES"))
+        const _NavItem(Icons.people, "Employees"),
+
+      // ✅ DISPATCH
       if (s.has("VIEW_JOBS"))
         const _NavItem(Icons.local_shipping, "Dispatch"),
 
@@ -67,7 +72,10 @@ class _DashboardState extends State<Dashboard> {
     if (s.has("VIEW_PRODUCTS")) list.add(const ProductManagerScreen());
     if (s.has("VIEW_REPORTS")) list.add(const ReportsScreen());
 
-    // ✅ ADDED DISPATCH SCREEN (TEMP jobId)
+    // ✅ EMPLOYEES SCREEN (MATCH ORDER ABOVE)
+    if (s.has("VIEW_EMPLOYEES")) list.add(const EmployeeScreen());
+
+    // ✅ DISPATCH
     if (s.has("VIEW_JOBS")) list.add(const DispatchListScreen());
 
     if (s.has("VIEW_SETTINGS")) list.add(const SettingsScreen());

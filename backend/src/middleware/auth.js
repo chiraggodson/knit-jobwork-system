@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 
 const SECRET = process.env.JWT_SECRET;
-
+console.log("JWT SECRET IN MIDDLEWARE:", SECRET);
 export function authMiddleware(req, res, next) {
   try {
     const header = req.headers.authorization;

@@ -128,7 +128,7 @@ if (token != null) {
         "roll_size": rollSize,
       }),
     );
-    */
+    
   }
 
   /* ================= UPDATE MACHINE STATUS ================= */
@@ -777,4 +777,34 @@ if (token != null) {
       throw Exception("Failed to delete user: ${res.body}");
     }
   }
+  
+  
+
+static Future<List<dynamic>> getEmployees() async {
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('token');
+
+  print("TOKEN BEING SENT: $token"); // 👈 debug
+
+  final res = await http.get(
+    Uri.parse("$baseUrl/employees"),
+    headers: {
+      "Authorization": "Bearer $token",
+      "Content-Type": "application/json",
+    },
+  );
+
+  print("STATUS: ${res.statusCode}");
+  print("BODY: ${res.body}");
+
+  if (res.statusCode == 200) {
+    return jsonDecode(res.body);
+  } else {
+    throw Exception(res.body);
+  }
+}
+
+
+
+
 }
