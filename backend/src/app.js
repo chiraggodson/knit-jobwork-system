@@ -24,17 +24,30 @@ const app = express();
 /*
 # MIDDLEWARE
 */
-app.use(cors());
+
+// Better CORS (important for iPhone + factory network)
+app.use(cors({
+  origin: "*", // later we can restrict
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Request logger (VERY useful)
+app.use((req, res, next) => {
+  console.log(`📡 ${req.method} ${req.originalUrl}`);
+  next();
+});
+
 /*
-# PUBLIC ROUTES (no login required)
+# PUBLIC ROUTES
 */
 app.use("/api/auth", authRoutes);
 
 /*
-# HEALTH CHECK (public)
+# HEALTH CHECK
 */
 app.get("/api/health", (req, res) => {
   res.json({
@@ -44,22 +57,20 @@ app.get("/api/health", (req, res) => {
 });
 
 /*
-# PROTECTED ROUTES (login required for everything below)
+# PROTECTED ROUTES
 */
-app.use(authMiddleware);
-
-app.use("/api/dispatch", dispatchRoutes);
-app.use("/api/dispatch", dispatchMasterRoutes);
-app.use("/api/fabrics", fabricsRoutes);
-app.use("/api/features", featuresRoutes);
-app.use("/api/jobs", jobRoutes);
-app.use("/api/machines", machineRoutes);
-app.use("/api/parties", partyRoutes);
-app.use("/api/parties/upload", partyUploadRoutes);
-app.use("/api/production", productionRoutes);
-app.use("/api/reports", reportRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/yarn", yarnRoutes);
+app.use("/api/dispatch", authMiddleware, dispatchRoutes);
+app.use("/api/dispatch", authMiddleware, dispatchMasterRoutes);
+app.use("/api/fabrics", authMiddleware, fabricsRoutes);
+app.use("/api/features", authMiddleware, featuresRoutes);
+app.use("/api/jobs", authMiddleware, jobRoutes);
+app.use("/api/machines", authMiddleware, machineRoutes);
+app.use("/api/parties", authMiddleware, partyRoutes);
+app.use("/api/parties/upload", authMiddleware, partyUploadRoutes);
+app.use("/api/production", authMiddleware, productionRoutes);
+app.use("/api/reports", authMiddleware, reportRoutes);
+app.use("/api/users", authMiddleware, userRoutes);
+app.use("/api/yarn", authMiddleware, yarnRoutes);
 
 /*
 # STATIC FILES
