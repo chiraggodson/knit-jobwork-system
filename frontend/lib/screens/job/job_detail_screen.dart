@@ -8,6 +8,7 @@ import '../../services/api_service.dart';
 import '../dispatch/dispatch_screen.dart';
 import '../yarn/setting_fabric_screen.dart';
 import '../production/production_entry_screen.dart';
+import 'po_print_screen.dart';
 
 
 class JobDetailScreen extends StatefulWidget {
@@ -711,7 +712,25 @@ List<dynamic> dispatchHistory = [];
                       loadJob();
 
                     }
-
+                    ElevatedButton(
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PoPrintScreen(
+          poData: {
+            "id": job.id,
+            "party_name": job.partyName,
+            "fabric_name": job.fabricName,
+            "quantity": job.quantity,
+            "date": job.date,
+          },
+        ),
+      ),
+    );
+  },
+  child: const Text("Print PO"),
+),
                   },
                 ),
 
