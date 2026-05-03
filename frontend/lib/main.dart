@@ -9,20 +9,54 @@ import 'screens/admin/product_manager_screen.dart';
 import 'screens/dashboard/dashboard_home_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart'; // ✅ ADD THIS
 import 'package:knit_jobwork_app/screens/auth/login_screen.dart';
-
+import 'services/api_service.dart';
+import 'screens/employees/employee_screen.dart';
 import 'screens/dispatch/dispatch_list_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
  
   await AppConfig.load();
-
-if (!AppConfig.requireLogin) {
-  UserSession.initDevSession(); // 🔥 THIS FIXES YOUR ISSUE
-}
   runApp(const KnitApp());
 }
 
+class AuthGate extends StatefulWidget {
+  const AuthGate({super.key});
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  bool loading = true;
+  bool isLoggedIn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    checkLogin();
+  }
+
+  Future<void> checkLogin() async {
+    final token = await ApiService.getToken();
+
+    setState(() {
+      isLoggedIn = token != null;
+      loading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return isLoggedIn ? const Dashboard() : const LoginScreen();
+  }
+}
 /* ================= APP ROOT ================= */
 
 class KnitApp extends StatelessWidget {
@@ -66,7 +100,7 @@ class KnitApp extends StatelessWidget {
     ),
   ),
 
-  initialRoute: AppConfig.requireLogin ? "/login" : "/dashboard",
+  home: const AuthGate(),
 
   routes: {
     "/login": (context) =>  LoginScreen(),
@@ -77,8 +111,12 @@ class KnitApp extends StatelessWidget {
 }
 
 /* ================= DASHBOARD ================= */
+class Dashboard extends StatefulWidget {
+  const Dashboard({super.key});
 
-
+  @override
+  State<Dashboard> createState() => _DashboardState();
+}
 
 class _DashboardState extends State<Dashboard> {
   int _index = 0;
@@ -90,6 +128,7 @@ class _DashboardState extends State<Dashboard> {
     const DispatchListScreen(),
     MachineScreen(),
     ProductManagerScreen(),
+    EmployeeScreen(),
     ReportsScreen(),
   ];
 
@@ -100,6 +139,7 @@ class _DashboardState extends State<Dashboard> {
   _NavItem(Icons.local_shipping, "Dispatch"), // ✅ ADD THIS
   _NavItem(Icons.precision_manufacturing, "Machines"),
   _NavItem(Icons.category, "Products"),
+   _NavItem(Icons.people, "Employees"), 
   _NavItem(Icons.bar_chart, "Reports"),
 ];
 
@@ -180,7 +220,7 @@ class _DashboardState extends State<Dashboard> {
         color: Colors.grey,
       ),
     ),
-          const SizedBox(height: 40),
+          const SizedBox(width: 10),
 
           ...List.generate(navItems.length, (i) {
             final selected = i == _index;
@@ -206,7 +246,9 @@ class _DashboardState extends State<Dashboard> {
                           ? const Color(0xFF00BFA6)
                           : Colors.grey,
                     ),
+                    
                     const SizedBox(width: 14),
+                    
                     Text(
                       navItems[i].label,
                       style: TextStyle(
@@ -222,96 +264,164 @@ class _DashboardState extends State<Dashboard> {
               ),
             );
           }),
+          const SizedBox(height: 30),
+
+const Divider(color: Colors.grey),
+
+const SizedBox(height: 10),
+
+InkWell(
+  onTap: () async {
+    await ApiService.setToken(null);
+
+    if (!mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+  },
+  child: Container(
+    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: const Row(
+      children: [
+        Icon(Icons.logout, color: Colors.redAccent),
+        SizedBox(width: 14),
+        Text(
+          "Logout",
+          style: TextStyle(
+            color: Colors.redAccent,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    ),
+  ),
+),
         ],
       ),
       ),
     );
   }
-}
-
-Widget _buildTopBar() {
-  return Container(
-    height: 60,
-    padding: const EdgeInsets.symmetric(horizontal: 20),
-    decoration: BoxDecoration(
-      color: const Color(0xFF1E1E1E),
-      border: Border(
-        bottom: BorderSide(
-          color: Colors.grey.shade800,
+  Widget _buildTopBar() {
+    return Container(
+      height: 60,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.grey.shade800,
+          ),
         ),
       ),
-    ),
-    child: Row(
-      children: [
+      child: Row(
+        children: [
 
-        const Text(
-          "Factory Command Center",
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+          const Text(
+            "Factory Command Center",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
 
-        const Spacer(),
+          const Spacer(),
 
-        /// SERVER STATUS
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 10,
-            vertical: 4,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: const Row(
-            children: [
+          /// SERVER STATUS
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 4,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: const Row(
+              children: [
 
-              Icon(
-                Icons.circle,
-                size: 10,
-                color: Colors.greenAccent,
-              ),
-
-              SizedBox(width: 6),
-
-              Text(
-                "SERVER ONLINE",
-                style: TextStyle(
-                  fontSize: 12,
+                Icon(
+                  Icons.circle,
+                  size: 10,
                   color: Colors.greenAccent,
-                  fontWeight: FontWeight.bold,
                 ),
-              ),
-            ],
+
+                SizedBox(width: 6),
+
+                Text(
+                  "SERVER ONLINE",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.greenAccent,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
 
-        const SizedBox(width: 20),
+          const SizedBox(width: 20),
 
-        /// NOTIFICATIONS
-        IconButton(
-          icon: const Icon(Icons.notifications_none),
-          onPressed: () {},
-        ),
-
-        /// USER
-        const CircleAvatar(
-          radius: 16,
-          backgroundColor: Color(0xFF00BFA6),
-          child: Icon(
-            Icons.person,
-            size: 18,
-            color: Colors.black,
+          /// NOTIFICATIONS
+          IconButton(
+            icon: const Icon(Icons.notifications_none),
+            onPressed: () {},
           ),
-        ),
 
-        const SizedBox(width: 10),
-      ],
+         
+          const SizedBox(width: 10),
+          PopupMenuButton<String>(
+    icon: const CircleAvatar(
+      radius: 16,
+      backgroundColor: Color(0xFF00BFA6),
+      child: Icon(Icons.person, size: 18, color: Colors.black),
     ),
-  );
-}
+    onSelected: (value) async {
+      if (value == "logout") {
+        await ApiService.setToken(null);
 
+        if (!mounted) return;
+
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+    },
+    itemBuilder: (context) => [
+  const PopupMenuItem(
+    enabled: false,
+    child: Text("chirag"), // later dynamic
+  ),
+  const PopupMenuDivider(),
+  const PopupMenuItem(
+    value: "logout",
+        child: Row(
+          children: [
+            Icon(Icons.logout, color: Colors.redAccent),
+            SizedBox(width: 10),
+            Text("Logout"),
+          ],
+        ),
+      ),
+    ],
+  ),
+
+  const SizedBox(width: 10),
+        ],
+      ),
+    );
+  }
+
+
+}
 
 class _NavItem {
   final IconData icon;

@@ -63,7 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        error = "Cannot connect to server";
+        error = e.toString();
       });
     }
 

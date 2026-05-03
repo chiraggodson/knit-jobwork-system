@@ -6,9 +6,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ApiService {
   static const baseUrl = "http://192.168.29.6:4000";
 
-static Future<void> setToken(String token) async {
+static Future<void> setToken(String? token) async {
   final prefs = await SharedPreferences.getInstance();
-  await prefs.setString('token', token);
+
+  if (token == null) {
+    await prefs.remove('token'); // ✅ FIX
+  } else {
+    await prefs.setString('token', token);
+  }
 }
 
 static Future<String?> getToken() async {

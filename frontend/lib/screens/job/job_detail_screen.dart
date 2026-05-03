@@ -8,8 +8,7 @@ import '../../services/api_service.dart';
 import '../dispatch/dispatch_screen.dart';
 import '../yarn/setting_fabric_screen.dart';
 import '../production/production_entry_screen.dart';
-import 'po_print_screen.dart';
-
+import '../../services/pdf_service.dart';
 
 class JobDetailScreen extends StatefulWidget {
   final int jobId;
@@ -555,6 +554,21 @@ List<dynamic> dispatchHistory = [];
               ),
 
               /// ================= ACTIONS =================
+              /// PRINT BUTTON (FIXED)
+actionButton(
+  icon: Icons.print,
+  label: "Print Job",
+  onTap: () {
+    PdfService.generateJobworkPDF(
+      jobNo: widget.jobNo,
+      partyName: partyName,
+      fabricName: fabricType,
+      orderQty: "${orderQty.toStringAsFixed(2)} kg",
+      date: DateTime.now().toString().split(" ")[0],
+    );
+  },
+),
+
               if (status == "OPEN")
                 actionButton(
                   icon: Icons.edit,
@@ -572,7 +586,7 @@ List<dynamic> dispatchHistory = [];
                     );
                   },
                 ),
-                
+              
                 if (status == "OPEN")
                 actionButton(
                   icon: Icons.inventory,
@@ -712,25 +726,7 @@ List<dynamic> dispatchHistory = [];
                       loadJob();
 
                     }
-                    ElevatedButton(
-  onPressed: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => PoPrintScreen(
-          poData: {
-            "id": job.id,
-            "party_name": job.partyName,
-            "fabric_name": job.fabricName,
-            "quantity": job.quantity,
-            "date": job.date,
-          },
-        ),
-      ),
-    );
-  },
-  child: const Text("Print PO"),
-),
+                  
                   },
                 ),
 
