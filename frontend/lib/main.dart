@@ -12,6 +12,7 @@ import 'package:knit_jobwork_app/screens/auth/login_screen.dart';
 import 'services/api_service.dart';
 import 'screens/employees/employee_screen.dart';
 import 'screens/dispatch/dispatch_list_screen.dart';
+import 'screens/admin/settings_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -121,27 +122,56 @@ class Dashboard extends StatefulWidget {
 class _DashboardState extends State<Dashboard> {
   int _index = 0;
 
-  final List<Widget> screens = [
-    DashboardHome(),
-    JobReportScreen(),
-    PartyYarnScreen(),
-    const DispatchListScreen(),
-    MachineScreen(),
-    ProductManagerScreen(),
-    EmployeeScreen(),
-    ReportsScreen(),
-  ];
-
-  final List<_NavItem> navItems = const [
-  _NavItem(Icons.dashboard, "Dashboard"),
-  _NavItem(Icons.factory, "Jobwork"),
-  _NavItem(Icons.inventory, "Yarn"),
-  _NavItem(Icons.local_shipping, "Dispatch"), // ✅ ADD THIS
-  _NavItem(Icons.precision_manufacturing, "Machines"),
-  _NavItem(Icons.category, "Products"),
-   _NavItem(Icons.people, "Employees"), 
-  _NavItem(Icons.bar_chart, "Reports"),
+final List<NavItemConfig> navConfig = [
+  NavItemConfig(
+    icon: Icons.dashboard,
+    label: "Dashboard",
+    screen: DashboardHome(),
+  ),
+  NavItemConfig(
+    icon: Icons.factory,
+    label: "Jobwork",
+    screen: JobReportScreen(),
+  ),
+  NavItemConfig(
+    icon: Icons.inventory,
+    label: "Yarn",
+    screen: PartyYarnScreen(),
+  ),
+  NavItemConfig(
+    icon: Icons.local_shipping,
+    label: "Dispatch",
+    screen: const DispatchListScreen(),
+  ),
+  NavItemConfig(
+    icon: Icons.precision_manufacturing,
+    label: "Machines",
+    screen: MachineScreen(),
+  ),
+  NavItemConfig(
+    icon: Icons.category,
+    label: "Products",
+    screen: ProductManagerScreen(),
+  ),
+  NavItemConfig(
+    icon: Icons.people,
+    label: "Employees",
+    screen: EmployeeScreen(),
+  ),
+  NavItemConfig(
+    icon: Icons.bar_chart,
+    label: "Reports",
+    screen: ReportsScreen(),
+  ),
+  NavItemConfig(
+    icon: Icons.settings,
+    label: "Settings",
+    screen: SettingsScreen(),
+  ),
 ];
+  
+
+ 
 
   @override
   Widget build(BuildContext context) {
@@ -167,7 +197,7 @@ class _DashboardState extends State<Dashboard> {
                             constraints: const BoxConstraints(
                               maxWidth: 1280,
                             ),
-                            child: screens[_index],
+                            child: navConfig[_index].screen,
                           ),
                         ),
                       ),
@@ -182,11 +212,11 @@ class _DashboardState extends State<Dashboard> {
 
         // Mobile Layout
         return Scaffold(
-          body: screens[_index],
+          body: navConfig[_index].screen,
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: _index,
             onTap: (i) => setState(() => _index = i),
-            items: navItems
+            items: navConfig
                 .map(
                   (item) => BottomNavigationBarItem(
                     icon: Icon(item.icon),
@@ -222,7 +252,7 @@ class _DashboardState extends State<Dashboard> {
     ),
           const SizedBox(width: 10),
 
-          ...List.generate(navItems.length, (i) {
+          ...List.generate(navConfig.length, (i) {
             final selected = i == _index;
 
             return InkWell(
@@ -241,7 +271,7 @@ class _DashboardState extends State<Dashboard> {
                 child: Row(
                   children: [
                     Icon(
-                      navItems[i].icon,
+                      navConfig[i].icon,
                       color: selected
                           ? const Color(0xFF00BFA6)
                           : Colors.grey,
@@ -250,7 +280,7 @@ class _DashboardState extends State<Dashboard> {
                     const SizedBox(width: 14),
                     
                     Text(
-                      navItems[i].label,
+                      navConfig[i].label,
                       style: TextStyle(
                         color: selected
                             ? const Color(0xFF00BFA6)
@@ -422,10 +452,14 @@ InkWell(
 
 
 }
-
-class _NavItem {
+class NavItemConfig {
   final IconData icon;
   final String label;
+  final Widget screen;
 
-  const _NavItem(this.icon, this.label);
+  const NavItemConfig({
+    required this.icon,
+    required this.label,
+    required this.screen,
+  });
 }

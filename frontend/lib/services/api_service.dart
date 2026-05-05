@@ -35,6 +35,28 @@ static Future<void> clearToken() async {
     if (token != null) "Authorization": "Bearer $token",
   };
 }
+Future<String?> login(String username, String password) async {
+  final response = await http.post(
+    Uri.parse("$baseUrl/login"),
+    headers: {"Content-Type": "application/json"},
+    body: jsonEncode({
+      "username": username,
+      "password": password,
+    }),
+  );
+
+  final data = jsonDecode(response.body);
+
+  if (data["success"] == true) {
+    return data["token"]; // ✅ THIS is your JWT
+  } else {
+    return null;
+  }
+}
+Future<void> saveToken(String token) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString("token", token);
+}
 
   /* ================= JOBS ================= */
 

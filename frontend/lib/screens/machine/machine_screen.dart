@@ -10,7 +10,6 @@ class MachineScreen extends StatefulWidget {
 }
 
 class _MachineScreenState extends State<MachineScreen> {
-
   List machines = [];
   bool loading = true;
 
@@ -63,7 +62,6 @@ class _MachineScreenState extends State<MachineScreen> {
         alerts = warn;
         loading = false;
       });
-
     } catch (e) {
       debugPrint(e.toString());
     }
@@ -72,7 +70,7 @@ class _MachineScreenState extends State<MachineScreen> {
   Map? getMachine(int machineNo) {
     try {
       return machines.firstWhere(
-        (m) => int.parse(m["machine_no"].toString()) == machineNo
+        (m) => int.parse(m["machine_no"].toString()) == machineNo,
       );
     } catch (_) {
       return null;
@@ -94,60 +92,103 @@ class _MachineScreenState extends State<MachineScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     if (loading) {
       return const Center(child: CircularProgressIndicator());
     }
 
     return Stack(
       children: [
-
-        /// MAIN DASHBOARD (FULL WIDTH)
         Container(
           color: const Color(0xFF121212),
           padding: const EdgeInsets.all(24),
           child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                int columns = constraints.maxWidth > 1400
+                    ? 4
+                    : constraints.maxWidth > 900
+                        ? 2
+                        : 1;
 
-                const Text(
-                  "Factory Command Center",
-                  style: TextStyle(fontSize: 26,fontWeight: FontWeight.bold),
-                ),
-
-                const SizedBox(height: 30),
-
-                /// METRICS
-                Row(
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _metricCard("Running", running, Colors.greenAccent),
-                    _metricCard("Stopped", stopped, Colors.redAccent),
-                    _metricCard("Alerts", alerts, Colors.orangeAccent),
-                    _metricCard("Total", machines.length, Colors.cyanAccent),
+                    const Text(
+                      "Factory Command Center",
+                      style:
+                          TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                    ),
+
+                    const SizedBox(height: 30),
+
+                    /// METRICS
+                    Wrap(
+                      spacing: 20,
+                      runSpacing: 20,
+                      children: [
+                        _metricCardNew(
+                          "Machines Running",
+                          "$running",
+                          Icons.precision_manufacturing,
+                          Colors.greenAccent,
+                          columns,
+                          constraints,
+                        ),
+                        _metricCardNew(
+                          "Machines Stopped",
+                          "$stopped",
+                          Icons.warning_amber_rounded,
+                          Colors.orangeAccent,
+                          columns,
+                          constraints,
+                        ),
+                        _metricCardNew(
+                          "Total Machines",
+                          "${machines.length}",
+                          Icons.factory,
+                          const Color(0xFF00BFA6),
+                          columns,
+                          constraints,
+                        ),
+                        _metricCardNew(
+                          "Yarn Alerts",
+                          "$alerts",
+                          Icons.inventory,
+                          Colors.redAccent,
+                          columns,
+                          constraints,
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 40),
+
+                    _buildFloor(
+                        "Ground Floor",
+                        [1,2,3,4,5,6,7,8,9,10,11,12],
+                        constraints),
+
+                    const SizedBox(height: 30),
+
+                    _buildFloor(
+                        "Second Floor",
+                        [13,14,15,16,17,18,19,20,21,26,27,28,29],
+                        constraints),
+
+                    const SizedBox(height: 30),
+
+                    _buildFloor(
+                        "Third Floor",
+                        [22,23,24,25,30,31],
+                        constraints),
                   ],
-                ),
-
-                const SizedBox(height: 40),
-
-                _buildFloor("Ground Floor",
-                    [1,2,3,4,5,6,7,8,9,10,11,12]),
-
-                const SizedBox(height: 30),
-
-                _buildFloor("Second Floor",
-                    [13,14,15,16,17,18,19,20,21,26,27,28,29]),
-
-                const SizedBox(height: 30),
-
-                _buildFloor("Third Floor",
-                    [22,23,24,25,30,31]),
-              ],
+                );
+              },
             ),
           ),
         ),
 
-        /// RIGHT PANEL (OVERLAY)
+        /// RIGHT PANEL
         if (showPanel)
           Positioned(
             right: 0,
@@ -155,31 +196,22 @@ class _MachineScreenState extends State<MachineScreen> {
             bottom: 0,
             child: Row(
               children: [
-
-                /// DRAG HANDLE
                 GestureDetector(
                   onHorizontalDragUpdate: (details) {
                     setState(() {
                       panelWidth -= details.delta.dx;
-                      if (panelWidth < 250) panelWidth = 250;
-                      if (panelWidth > 600) panelWidth = 600;
+                      panelWidth = panelWidth.clamp(250, 600);
                     });
                   },
                   child: Container(
                     width: 6,
                     color: Colors.grey.shade800,
-                    child: const Center(
-                      child: Icon(Icons.drag_indicator, size: 16),
-                    ),
                   ),
                 ),
-
-                /// PANEL
                 Container(
                   width: panelWidth,
                   color: const Color(0xFF1A1A1A),
                   padding: const EdgeInsets.all(20),
-
                   child: selectedMachine == null
                       ? const Text("No Machine")
                       : _buildDetails(selectedMachine!),
@@ -191,30 +223,31 @@ class _MachineScreenState extends State<MachineScreen> {
     );
   }
 
-  Widget _buildFloor(String title, List<int> machinesList) {
+  Widget _buildFloor(
+      String title, List<int> machinesList, BoxConstraints constraints) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-
         Text(title,
-            style: const TextStyle(fontSize: 20,fontWeight: FontWeight.bold)),
-
+            style:
+                const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         const SizedBox(height: 16),
 
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: machinesList.length,
-
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: constraints.maxWidth > 1500
+                ? 8
+                : constraints.maxWidth > 1200
+                    ? 6
+                    : 4,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
             childAspectRatio: 0.95,
           ),
-
           itemBuilder: (context, index) {
-
             int machineNumber = machinesList[index];
             final m = getMachine(machineNumber);
 
@@ -234,43 +267,70 @@ class _MachineScreenState extends State<MachineScreen> {
   }
 
   Widget _machineCard(int machineNo, Map? m) {
-
     final status = m?["status"] ?? "STOPPED";
 
     return Container(
       padding: const EdgeInsets.all(12),
-
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.grey.shade800),
       ),
-
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           Text("M-$machineNo",
               style: const TextStyle(fontWeight: FontWeight.bold)),
-
           const SizedBox(height: 6),
-
-          Text("RPM: ${m?['rpm'] ?? 0}",
-              style: const TextStyle(fontSize: 11)),
-
+          Text("RPM: ${m?['rpm'] ?? 0}", style: const TextStyle(fontSize: 11)),
           Text("Job: ${m?['job_no'] ?? "-"}",
               style: const TextStyle(fontSize: 11)),
-
           const Spacer(),
-
           Row(
             children: [
               Icon(Icons.circle, size: 10, color: statusColor(status)),
               const SizedBox(width: 6),
               Text(status,
+                  style:
+                      TextStyle(color: statusColor(status), fontSize: 12)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _metricCardNew(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+    int columns,
+    BoxConstraints constraints,
+  ) {
+    return Container(
+      width: constraints.maxWidth / columns - 20,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade800),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 36, color: color),
+          const SizedBox(width: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(value,
                   style: TextStyle(
-                      color: statusColor(status),
-                      fontSize: 12)),
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: color)),
+              const SizedBox(height: 4),
+              Text(title,
+                  style: const TextStyle(color: Colors.grey, fontSize: 13)),
             ],
           ),
         ],
@@ -282,27 +342,10 @@ class _MachineScreenState extends State<MachineScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text("Machine ${m['machine_no']}",
-                style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold)),
-            IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () {
-                setState(() {
-                  showPanel = false;
-                });
-              },
-            )
-          ],
-        ),
-
+        Text("Machine ${m['machine_no']}",
+            style:
+                const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         const SizedBox(height: 10),
-
         Text("Status: ${m['status']}"),
         Text("RPM: ${m['rpm']}"),
         Text("Counter: ${m['counter']}"),
@@ -311,58 +354,25 @@ class _MachineScreenState extends State<MachineScreen> {
 
         const SizedBox(height: 20),
 
-        Column(
-  crossAxisAlignment: CrossAxisAlignment.stretch,
-  children: [
-    ElevatedButton(
-      onPressed: () => _showPerformanceDialog(m),
-      child: const Text("Update Performance"),
-    ),
+        ElevatedButton(
+          onPressed: () => _showPerformanceDialog(m),
+          child: const Text("Update Performance"),
+        ),
 
-    const SizedBox(height: 12),
+        const SizedBox(height: 12),
 
-    ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: statusColor(m['status']),
-      ),
-      onPressed: () => _changeStatus(m),
-      child: const Text("Change Status"),
-    ),
-  ],
-)
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: statusColor(m['status']),
+          ),
+          onPressed: () => _changeStatus(m),
+          child: const Text("Change Status"),
+        ),
       ],
     );
   }
 
-  Widget _metricCard(String title, int value, Color color) {
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            Text("$value",
-                style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: color)),
-            const SizedBox(height: 6),
-            Text(title,
-                style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey)),
-          ],
-        ),
-      ),
-    );
-  }
-
   Future<void> _showPerformanceDialog(Map machine) async {
-
     final rpmController =
         TextEditingController(text: machine['rpm']?.toString() ?? "0");
 
@@ -376,7 +386,6 @@ class _MachineScreenState extends State<MachineScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text("Update Machine"),
-
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -385,24 +394,19 @@ class _MachineScreenState extends State<MachineScreen> {
             TextField(controller: rollSizeController),
           ],
         ),
-
         actions: [
-
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text("Cancel"),
           ),
-
           ElevatedButton(
             onPressed: () async {
-
               await ApiService.updateMachinePerformance(
                 machineId: machine['id'],
                 rpm: int.tryParse(rpmController.text) ?? 0,
                 counter: int.tryParse(counterController.text) ?? 0,
                 rollSize: double.tryParse(rollSizeController.text) ?? 0,
               );
-
               Navigator.pop(context);
               loadMachines();
             },
@@ -414,63 +418,29 @@ class _MachineScreenState extends State<MachineScreen> {
   }
 
   Future<void> _changeStatus(Map machine) async {
-  final statuses = [
-    "RUNNING",
-    "STOPPED",
-    "CLEANING",
-    "YARN_REQUIRED",
-  ];
+    final statuses = ["RUNNING","STOPPED","CLEANING","YARN_REQUIRED"];
 
-  await showModalBottomSheet(
-    context: context,
-    builder: (_) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: statuses.map((status) {
-            return ListTile(
-              leading: Icon(
-                Icons.circle,
-                color: statusColor(status),
-              ),
-              title: Text(status),
-              onTap: () async {
-                Navigator.pop(context);
-
-                if (machine['id'] == null) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text("Machine ID missing")),
-  );
-  return;
-}
-
-await ApiService.updateMachineStatus(
-  machine['id'],
-  status,
-);
-
-                loadMachines(); // refresh UI
-              },
-            );
-          }).toList(),
-        ),
-      );
-    },
-  );
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    await showModalBottomSheet(
+      context: context,
+      builder: (_) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: statuses.map((status) {
+              return ListTile(
+                leading: Icon(Icons.circle, color: statusColor(status)),
+                title: Text(status),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await ApiService.updateMachineStatus(machine['id'], status);
+                  loadMachines();
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
 }

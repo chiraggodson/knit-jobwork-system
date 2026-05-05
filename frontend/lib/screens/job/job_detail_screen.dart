@@ -9,6 +9,7 @@ import '../dispatch/dispatch_screen.dart';
 import '../yarn/setting_fabric_screen.dart';
 import '../production/production_entry_screen.dart';
 import '../../services/pdf_service.dart';
+import '../../models/job_item.dart';
 
 class JobDetailScreen extends StatefulWidget {
   final int jobId;
@@ -559,16 +560,42 @@ actionButton(
   icon: Icons.print,
   label: "Print Job",
   onTap: () {
-    PdfService.generateJobworkPDF(
-      jobNo: widget.jobNo,
-      partyName: partyName,
-      fabricName: fabricType,
-      orderQty: "${orderQty.toStringAsFixed(2)} kg",
-      date: DateTime.now().toString().split(" ")[0],
-    );
-  },
-),
 
+  /// 🔥 CONVERT BACKEND DATA → PDF ITEMS
+  final List<JobItem> pdfItems = yarns.map<JobItem>((y) {
+
+  final yarnName = y['yarn_name'] ?? '-';
+
+  final mixPercent =
+      double.tryParse(y['mix_percent']?.toString() ?? '0') ?? 0;
+
+  final issued =
+      double.tryParse(y['issued']?.toString() ?? '0') ?? 0;
+
+  final requiredQty = orderQty * (mixPercent / 100);
+  final balance = requiredQty - issued;
+
+  return JobItem(
+    fabric: fabricType,
+    yarn: "$yarnName (${mixPercent.toStringAsFixed(0)}%)",
+    gsm: gsm,
+    width: "70",
+    quantity: requiredQty.toStringAsFixed(2),
+    issued: issued.toStringAsFixed(2),
+    balance: balance.toStringAsFixed(2),
+  );
+
+}).toList();
+
+  /// 🚀 GENERATE PDF
+  PdfService.generateJobworkPDF(
+    jobNo: widget.jobNo,
+    partyName: partyName,
+    date: DateTime.now().toString(),
+    items: pdfItems,
+  );
+},
+),
               if (status == "OPEN")
                 actionButton(
                   icon: Icons.edit,
