@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../services/api_service.dart';
 
 class Employee {
   final int? id;
@@ -84,7 +85,8 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
 
   final TextEditingController searchController = TextEditingController();
 
-  final String baseUrl = "http://192.168.29.6:4000";
+  final baseUrl = Uri.parse("${ApiService.baseUrl}/api/auth/login");
+
   String token = "";
 
   String generateEmpId() {

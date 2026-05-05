@@ -59,7 +59,7 @@ res.json(result.rows[0]);
 
 */
 router.post("/inward", async (req, res) => {
-const { party_id, yarn_id, lot_no, challan_no, inward_date, quantity } = req.body;
+const { party_id, yarn_id, lot_no, challan_no, inward_date, quantity, color_id } = req.body;
 
 if (!party_id || !yarn_id || !lot_no || !quantity) {
 return res.status(400).json({ error: "Missing fields" });
@@ -72,11 +72,11 @@ await pool.query("BEGIN");
 const lot = await pool.query(
   `
   INSERT INTO yarn_lot 
-  (party_id, yarn_id, lot_no, challan_no, inward_date, quantity_received)
-  VALUES ($1,$2,$3,$4,$5,$6)
+(party_id, yarn_id, lot_no, challan_no, inward_date, quantity_received, color_id)
+VALUES ($1,$2,$3,$4,$5,$6,$7)
   RETURNING id
   `,
-  [party_id, yarn_id, lot_no, challan_no, inward_date, quantity]
+  [party_id, yarn_id, lot_no, challan_no, inward_date, quantity,color_id]
 );
 
 const lotId = lot.rows[0].id;
@@ -246,11 +246,12 @@ res.json({ message: "Waste recorded" });
 router.get("/stock", async (req, res) => {
 const result = await pool.query(
   `   
-    SELECT 
-      yl.id AS yarn_lot_id,
-      yl.lot_no,
-      ym.yarn_name,
-      p.name AS party_name,
+    SELECT  
+  yl.id AS yarn_lot_id,
+  yl.lot_no,
+  ym.yarn_name,
+  p.name AS party_name,
+  c.name AS color_name,
       COALESCE(SUM(
         CASE
           WHEN y.transaction_type IN ('inward','return') THEN y.quantity
@@ -261,7 +262,8 @@ const result = await pool.query(
     JOIN yarn_master ym ON yl.yarn_id = ym.id
     JOIN parties p ON yl.party_id = p.id
     LEFT JOIN yarn_ledger y ON yl.id = y.yarn_lot_id
-    GROUP BY yl.id, yl.lot_no, ym.yarn_name, p.name
+    LEFT JOIN colors c ON yl.color_id = c.id
+    GROUP BY yl.id, yl.lot_no, ym.yarn_name, p.name, c.name
     ORDER BY yl.id DESC;
   `);
 
@@ -366,6 +368,7 @@ router.get("/inward/:party_id", async (req, res) => {
         yl.inward_date,
         yl.quantity_received,
         ym.yarn_name,
+        c.name AS color_name,
 
         COALESCE(SUM(
           CASE
@@ -377,10 +380,11 @@ router.get("/inward/:party_id", async (req, res) => {
       FROM yarn_lot yl
       JOIN yarn_master ym ON yl.yarn_id = ym.id
       LEFT JOIN yarn_ledger y ON yl.id = y.yarn_lot_id
+      LEFT JOIN colors c ON yl.color_id = c.id
 
       WHERE yl.party_id = $1
 
-      GROUP BY yl.id, yl.lot_no, yl.challan_no, yl.inward_date, yl.quantity_received, ym.yarn_name
+      GROUP BY yl.id, yl.lot_no, yl.challan_no, yl.inward_date, yl.quantity_received, ym.yarn_name, c.name
       ORDER BY yl.id DESC;
       `,
       [party_id]

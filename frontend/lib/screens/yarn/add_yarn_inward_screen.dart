@@ -19,6 +19,10 @@ class _AddYarnInwardScreenState extends State<AddYarnInwardScreen> {
 
   List parties = [];
   List yarns = [];
+  List colors = [];
+  int? colorId;
+  bool loadingColors = true;
+
 
   bool loading = false;
 
@@ -37,10 +41,14 @@ class _AddYarnInwardScreenState extends State<AddYarnInwardScreen> {
   }
 
   Future<void> loadData() async {
-      parties = await ApiService.getParties();
-      yarns = await ApiService.getYarnMaster();
-      setState(() {});
-    }
+  parties = await ApiService.getParties();
+  yarns = await ApiService.getYarnMaster();
+  colors = await ApiService.getColors(); // 🔥 NEW
+
+  setState(() {
+    loadingColors = false;
+  });
+}
 
   Future<void> pickDate() async {
     final picked = await showDatePicker(
@@ -69,6 +77,7 @@ class _AddYarnInwardScreenState extends State<AddYarnInwardScreen> {
         quantity: double.parse(_quantity.text),
         challanNo: _challanNo.text.trim(),
         inwardDate: DateFormat('yyyy-MM-dd').format(inwardDate),
+        color: colorId, // 🔥 IMPORTANT
       );
 
       if (mounted) {
@@ -144,6 +153,28 @@ class _AddYarnInwardScreenState extends State<AddYarnInwardScreen> {
               ),
 
               const SizedBox(height: 16),
+              // ================= COLOR =================
+loadingColors
+    ? const Center(child: CircularProgressIndicator())
+    : DropdownButtonFormField<int>(
+        value: colorId,
+        decoration: const InputDecoration(
+          labelText: "Color",
+          border: OutlineInputBorder(),
+        ),
+        items: colors
+            .where((c) => c['id'] != null)
+            .map<DropdownMenuItem<int>>(
+              (c) => DropdownMenuItem<int>(
+                value: c['id'],
+                child: Text(c['name']?.toString() ?? 'Unknown Color'),
+              ),
+            )
+            .toList(),
+        onChanged: (v) => setState(() => colorId = v),
+      ),
+
+const SizedBox(height: 16),
 
               // ================= LOT NO =================
               TextFormField(

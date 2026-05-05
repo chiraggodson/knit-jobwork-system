@@ -43,11 +43,12 @@ class _LoginScreenState extends State<LoginScreen> {
       final savedToken = await ApiService.getToken();
       print("TOKEN AFTER LOGIN: $savedToken");
         final role = data["user"]["role"]; // ✅ now actually used
-
-        UserSession.current = UserSession(
-          role: role,                                          // ✅ FIXED
-          permissions: data["user"]["permissions"] ?? ["ALL"], // ✅ FIXED
-        );
+UserSession.current = UserSession(
+  role: role,
+  permissions: List<String>.from(
+    data["user"]["permissions"] ?? ["ALL"],
+  ),
+);
 
         if (!mounted) return; // ✅ safety check
         Navigator.pushReplacement(

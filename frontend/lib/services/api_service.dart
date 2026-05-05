@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const baseUrl = "http://192.168.29.6:4000";
+  static const baseUrl = "http://192.168.1.31:4000";
 
 static Future<void> setToken(String? token) async {
   final prefs = await SharedPreferences.getInstance();
@@ -35,7 +35,7 @@ static Future<void> clearToken() async {
     if (token != null) "Authorization": "Bearer $token",
   };
 }
-Future<String?> login(String username, String password) async {
+Future<Map<String, dynamic>?> login(String username, String password) async {
   final response = await http.post(
     Uri.parse("$baseUrl/login"),
     headers: {"Content-Type": "application/json"},
@@ -47,8 +47,10 @@ Future<String?> login(String username, String password) async {
 
   final data = jsonDecode(response.body);
 
+  print("LOGIN RESPONSE: $data"); // 🔥 DEBUG
+
   if (data["success"] == true) {
-    return data["token"]; // ✅ THIS is your JWT
+    return data; // ✅ return FULL response
   } else {
     return null;
   }
@@ -336,6 +338,8 @@ if (token != null) {
     required double quantity,
     required String challanNo,
     required String inwardDate,
+    required int? color,
+
   }) async {
     final res = await http.post(
       Uri.parse("$baseUrl/api/yarn/inward"),
@@ -347,6 +351,7 @@ if (token != null) {
         "quantity": quantity,
         "challan_no": challanNo,
         "inward_date": inwardDate,
+        "color_id": color,
       }),
     );
 
