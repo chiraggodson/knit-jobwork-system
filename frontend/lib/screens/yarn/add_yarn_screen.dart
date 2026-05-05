@@ -17,7 +17,7 @@ class _AddYarnScreenState extends State<AddYarnScreen> {
       TextEditingController(text: "40'S");
   final TextEditingController _typeController =
       TextEditingController(text: "Cotton");
-
+  final TextEditingController _colorController = TextEditingController();
   bool _isLoading = false;
 
   Future<void> _saveYarn() async {
@@ -30,6 +30,7 @@ class _AddYarnScreenState extends State<AddYarnScreen> {
         yarnName: _nameController.text.trim(),
         yarnCount: _countController.text.trim(),
         yarnType: _typeController.text.trim(),
+        
       );
 
       if (!mounted) return;
@@ -95,7 +96,13 @@ class _AddYarnScreenState extends State<AddYarnScreen> {
               ),
 
               const SizedBox(height: 30),
-
+              TextField(
+  controller: _colorController,
+  decoration: const InputDecoration(
+    labelText: "Color",
+    border: OutlineInputBorder(),
+  ),
+),
               SizedBox(
                 width: double.infinity,
                 height: 50,

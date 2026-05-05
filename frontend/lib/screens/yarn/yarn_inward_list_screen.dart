@@ -22,6 +22,9 @@ class _AddYarnInwardScreenState extends State<AddYarnInwardScreen> {
 
   bool loading = false;
 
+  // ✅ COLOR
+  int? selectedColorId;
+
   // Controllers
   final TextEditingController _lotNo = TextEditingController();
   final TextEditingController _quantity = TextEditingController();
@@ -58,6 +61,13 @@ class _AddYarnInwardScreenState extends State<AddYarnInwardScreen> {
   Future<void> submit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    if (selectedColorId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select color")),
+      );
+      return;
+    }
+
     setState(() => loading = true);
 
     try {
@@ -66,21 +76,21 @@ class _AddYarnInwardScreenState extends State<AddYarnInwardScreen> {
         yarnId: yarnId!,
         lotNo: _lotNo.text.trim(),
         quantity: double.parse(_quantity.text),
-        
+        color: selectedColorId!,
         challanNo: _challanNo.text.trim(),
         inwardDate: DateFormat('yyyy-MM-dd').format(inwardDate),
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("Yarn inward recorded")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Yarn inward recorded")),
+        );
         Navigator.pop(context);
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
     }
 
     setState(() => loading = false);
@@ -136,6 +146,25 @@ class _AddYarnInwardScreenState extends State<AddYarnInwardScreen> {
                 onChanged: (v) => setState(() => yarnId = v),
                 validator: (v) => v == null ? "Select yarn" : null,
               ),
+              const SizedBox(height: 16),
+
+              // ✅ COLOR DROPDOWN (FIXED)
+              DropdownButtonFormField<int>(
+                value: selectedColorId,
+                decoration: const InputDecoration(
+                  labelText: "Color",
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 1, child: Text("Red")),
+                  DropdownMenuItem(value: 2, child: Text("Blue")),
+                  DropdownMenuItem(value: 3, child: Text("Black")),
+                  DropdownMenuItem(value: 4, child: Text("White")),
+                ],
+                onChanged: (v) => setState(() => selectedColorId = v),
+                validator: (v) => v == null ? "Select color" : null,
+              ),
+
               const SizedBox(height: 16),
 
               // LOT NO

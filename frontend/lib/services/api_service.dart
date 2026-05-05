@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const baseUrl = "http://192.168.1.31:4000";
+  static const baseUrl = "http://192.168.29.6:4000";
 
 static Future<void> setToken(String? token) async {
   final prefs = await SharedPreferences.getInstance();
@@ -37,7 +37,7 @@ static Future<void> clearToken() async {
 }
 Future<Map<String, dynamic>?> login(String username, String password) async {
   final response = await http.post(
-    Uri.parse("$baseUrl/login"),
+    Uri.parse("$baseUrl/api/login"),
     headers: {"Content-Type": "application/json"},
     body: jsonEncode({
       "username": username,
@@ -289,6 +289,7 @@ if (token != null) {
     required String yarnName,
     required String yarnCount,
     required String yarnType,
+    
   }) async {
     final res = await http.post(
       Uri.parse("$baseUrl/api/yarn"),
@@ -297,6 +298,7 @@ if (token != null) {
         "yarn_name": yarnName,
         "yarn_count": yarnCount,
         "yarn_type": yarnType,
+      
       }),
     );
 
@@ -535,6 +537,7 @@ if (token != null) {
 
   static Future<void> addFabric({
     required String name,
+    
     String? description,
   }) async {
     final res = await http.post(
@@ -819,7 +822,7 @@ static Future<List<dynamic>> getEmployees() async {
   print("TOKEN BEING SENT: $token"); // 👈 debug
 
   final res = await http.get(
-    Uri.parse("$baseUrl/employees"),
+    Uri.parse("$baseUrl/api/employees"),
     headers: {
       "Authorization": "Bearer $token",
       "Content-Type": "application/json",
@@ -836,7 +839,31 @@ static Future<List<dynamic>> getEmployees() async {
   }
 }
 
+static Future<void> addColor({
+  required String name,
+  String? code,
+}) async {
+  final response = await http.post(
+    Uri.parse('$baseUrl/api/colors'),
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({
+      'name': name,
+      'code': code,
+    }),
+  );
 
+  if (response.statusCode != 200 && response.statusCode != 201) {
+  throw Exception('Failed to add color: ${response.body}');
+}
+}
 
+static Future<List<dynamic>> getColors() async {
+  final response = await http.get(Uri.parse('$baseUrl/api/colors'));
 
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body);
+  } else {
+    throw Exception('Failed to load colors');
+  }
+}
 }
