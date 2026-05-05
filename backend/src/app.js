@@ -15,6 +15,7 @@ import partyUploadRoutes from "./routes/partyUpload.routes.js";
 import reportRoutes from "./routes/report.routes.js";
 import userRoutes from "./routes/users.routes.js";
 import yarnRoutes from "./routes/yarn.routes.js";
+import employeeRoutes from "./routes/employee.routes.js";
 
 // Auth middleware
 import { authMiddleware } from "./middleware/auth.js";
@@ -71,6 +72,7 @@ app.use("/api/production", authMiddleware, productionRoutes);
 app.use("/api/reports", authMiddleware, reportRoutes);
 app.use("/api/users", authMiddleware, userRoutes);
 app.use("/api/yarn", authMiddleware, yarnRoutes);
+app.use("/api/employees", authMiddleware, employeeRoutes);
 
 /*
 # STATIC FILES
