@@ -19,6 +19,7 @@ import userRoutes from "./routes/users.routes.js";
 import yarnRoutes from "./routes/yarn.routes.js";
 import employeeRoutes from "./routes/employee.routes.js";
 import colorRoutes from "./routes/color.routes.js";
+import yarnChallanRoutes from "./modules/yarn/routes/yarnChallan.routes.js";
 
 // Middleware
 import { authMiddleware } from "./middleware/auth.js";
@@ -126,6 +127,8 @@ app.use("/api/yarn", authMiddleware, yarnRoutes);
 app.use("/api/employees", authMiddleware, employeeRoutes);
 
 app.use("/api/colors", authMiddleware, colorRoutes);
+
+app.use("/api/yarn-challans", authMiddleware, yarnChallanRoutes);
 
 /*
 =================================

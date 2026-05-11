@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const baseUrl = "http://192.168.29.6:4000";
+  static const baseUrl = "http://192.168.1.19:4000";
 
 static Future<void> setToken(String? token) async {
   final prefs = await SharedPreferences.getInstance();
@@ -857,14 +857,51 @@ static Future<void> addColor({
   throw Exception('Failed to add color: ${response.body}');
 }
 }
-
 static Future<List<dynamic>> getColors() async {
-  final response = await http.get(Uri.parse('$baseUrl/api/colors'));
+  final response = await http.get(
+    Uri.parse('$baseUrl/api/colors'),
+    headers: await getHeaders(),
+  );
+
+  print('GET COLORS STATUS: ${response.statusCode}');
+  print('GET COLORS BODY: ${response.body}');
 
   if (response.statusCode == 200) {
     return jsonDecode(response.body);
   } else {
-    throw Exception('Failed to load colors');
+    throw Exception(
+      'Failed to load colors: ${response.statusCode} ${response.body}',
+    );
+  }
+}
+
+static Future<void> createYarnChallan({
+  required String challanNo,
+  required int partyId,
+  required String challanDate,
+  String? vehicleNo,
+  String? remarks,
+  required List<Map<String, dynamic>> items,
+}) async {
+  final res = await http.post(
+    Uri.parse("$baseUrl/api/yarn-challans"),
+    headers: await getHeaders(),
+    body: jsonEncode({
+      "challan_no": challanNo,
+      "challan_type": "INWARD",
+      "party_id": partyId,
+      "challan_date": challanDate,
+      "vehicle_no": vehicleNo,
+      "remarks": remarks,
+      "items": items,
+    }),
+  );
+
+  print("CREATE CHALLAN STATUS: ${res.statusCode}");
+  print("CREATE CHALLAN BODY: ${res.body}");
+
+  if (res.statusCode < 200 || res.statusCode >= 300) {
+    throw Exception(res.body);
   }
 }
 }

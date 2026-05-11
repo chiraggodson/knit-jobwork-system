@@ -83,7 +83,7 @@ class _YarnReturnScreenState
     try {
       await ApiService.returnYarn(
         jobId: widget.jobId,
-        yarnLotId: selectedLot['yarn_lot'],
+        yarnLotId: selectedLot['yarn_lot_id'],
         quantity: qty,
       );
 
