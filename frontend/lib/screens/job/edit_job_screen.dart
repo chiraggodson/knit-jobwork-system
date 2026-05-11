@@ -100,7 +100,9 @@ class _EditJobScreenState extends State<EditJobScreen> {
       final m = await ApiService.getMachines();
       final f = await ApiService.getFabrics();
       final y = await ApiService.getYarnMaster();
-      print("MACHINES MASTER ====> $machines");
+      machines = m;
+
+print("MACHINES MASTER ====> $machines");
       final jobDetails =
           await ApiService.getJobDetail(widget.job['job_no']);
 
@@ -123,23 +125,37 @@ print("JOB MACHINES ====> ${jobDetails['machines']}");
             : null;
 
         // ✅ FIX MACHINE MAPPING
-        selectedMachineIds = (jobDetails['machines'] as List? ?? [])
-        .map<int>((m) {
-          if (m is Map<String, dynamic>) {
-            return m['id'] ?? m['machine_id'];
-          }
-          return m; // fallback if it's already int
-        })
-        .whereType<int>()
-        .toList();
+        // ✅ FIX MACHINE MAPPING
+selectedMachineIds = (jobDetails['machines'] as List? ?? [])
+    .map<int?>((m) {
+      if (m is Map<String, dynamic>) {
+        final rawId = m['machine_id'] ?? m['id'];
 
-        if (selectedMachineIds.length <= 1) {
-          isMultiMachine = false;
-          singleMachineId =
-              selectedMachineIds.isNotEmpty ? selectedMachineIds.first : null;
-        } else {
-          isMultiMachine = true;
-        }
+        if (rawId == null) return null;
+
+        return int.tryParse(rawId.toString());
+      }
+
+      return int.tryParse(m.toString());
+    })
+    .whereType<int>()
+    .toList();
+
+print("SELECTED MACHINE IDS => $selectedMachineIds");
+if (selectedMachineIds.length <= 1) {
+  isMultiMachine = false;
+
+  singleMachineId = selectedMachineIds.isNotEmpty
+      ? selectedMachineIds.first
+      : null;
+} else {
+  isMultiMachine = true;
+
+  singleMachineId = null;
+}
+
+print("SINGLE MACHINE => $singleMachineId");
+
 
         selectedYarns = (jobDetails['yarns'] as List? ?? [])
     .map<Map<String, dynamic>>((y) {

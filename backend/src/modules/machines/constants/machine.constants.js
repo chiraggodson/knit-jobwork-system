@@ -1,0 +1,8 @@
+export const VALID_MACHINE_STATUSES = [
+  "RUNNING",
+  "STOPPED",
+  "CLEANING",
+  "SAMPLING",
+  "NO_ORDER",
+  "YARN_REQUIRED",
+];

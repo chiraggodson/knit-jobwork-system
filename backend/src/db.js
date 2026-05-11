@@ -1,39 +1,29 @@
-import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
 import pkg from "pg";
+import { env } from "./config/env.js";
 
 const { Pool } = pkg;
 
-// ES module fix
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Load env
-dotenv.config({
-path: path.join(__dirname, "../.env"),
-});
-
-// Create pool
 export const pool = new Pool({
-host: process.env.DB_HOST,
-user: process.env.DB_USER,
-password: process.env.DB_PASS,
-database: process.env.DB_NAME,
-port: 5432,
+  host: env.DB_HOST,
+  user: env.DB_USER,
+  password: env.DB_PASS,
+  database: env.DB_NAME,
+  port: 5432,
 
-// 🔥 Production-ready tweaks
-max: 20, // max clients
-idleTimeoutMillis: 30000,
-connectionTimeoutMillis: 2000,
+  // Connection pool settings
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 });
 
-// Log connection
+// Connection event
 pool.on("connect", () => {
-console.log("📦 New DB connection");
+  if (env.NODE_ENV === "development") {
+    console.log("📦 PostgreSQL connected");
+  }
 });
 
-// Error handling
+// Unexpected errors
 pool.on("error", (err) => {
-console.error("❌ Unexpected DB error", err);
+  console.error("❌ PostgreSQL Pool Error:", err.message);
 });

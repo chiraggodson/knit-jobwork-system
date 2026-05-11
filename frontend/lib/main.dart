@@ -13,12 +13,17 @@ import 'services/api_service.dart';
 import 'screens/employees/employee_screen.dart';
 import 'screens/dispatch/dispatch_list_screen.dart';
 import 'screens/admin/settings_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
  
   await AppConfig.load();
-  runApp(const KnitApp());
+  runApp(
+  const ProviderScope(
+    child: KnitApp(),
+  ),
+);
 }
 
 class AuthGate extends StatefulWidget {

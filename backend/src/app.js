@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 
 // Routes
 import authRoutes from "./routes/auth.routes.js";
@@ -8,7 +10,7 @@ import dispatchMasterRoutes from "./routes/dispatch.master.routes.js";
 import fabricsRoutes from "./routes/fabrics.routes.js";
 import featuresRoutes from "./routes/features.routes.js";
 import jobRoutes from "./routes/job.routes.js";
-import machineRoutes from "./routes/machine.routes.js";
+import machineRoutes from "./modules/machines/routes/machine.routes.js";
 import productionRoutes from "./routes/production.routes.js";
 import partyRoutes from "./routes/party.routes.js";
 import partyUploadRoutes from "./routes/partyUpload.routes.js";
@@ -18,94 +20,145 @@ import yarnRoutes from "./routes/yarn.routes.js";
 import employeeRoutes from "./routes/employee.routes.js";
 import colorRoutes from "./routes/color.routes.js";
 
-
-
-// Auth middleware
+// Middleware
 import { authMiddleware } from "./middleware/auth.js";
+import { requestLogger } from "./middleware/requestLogger.js";
+import { errorHandler } from "./middleware/errorHandler.js";
+import { notFound } from "./middleware/notFound.js";
 
 const app = express();
 
 /*
-# MIDDLEWARE
+=================================
+SECURITY
+=================================
 */
 
-// Better CORS (important for iPhone + factory network)
+// Secure headers
+app.use(helmet());
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 mins
+  max: 500, // requests per IP
+  message: "Too many requests, please try again later.",
+});
+
+app.use(limiter);
+
+/*
+=================================
+CORS
+=================================
+*/
+
 app.use(cors({
-  origin: "*", // later we can restrict
+  origin: "*",
   methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  allowedHeaders: ["Content-Type", "Authorization"],
 }));
+
+/*
+=================================
+BODY PARSING
+=================================
+*/
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Request logger (VERY useful)
-app.use((req, res, next) => {
-  console.log(`📡 ${req.method} ${req.originalUrl}`);
-  next();
-});
+/*
+=================================
+LOGGING
+=================================
+*/
+
+app.use(requestLogger);
 
 /*
-# PUBLIC ROUTES
+=================================
+HEALTH CHECK
+=================================
 */
-app.use("/api/auth", authRoutes);
 
-/*
-# HEALTH CHECK
-*/
 app.get("/api/health", (req, res) => {
   res.json({
-    status: "OK",
+    success: true,
     message: "BBJOMS API running 🚀",
   });
 });
 
 /*
-# PROTECTED ROUTES
+=================================
+PUBLIC ROUTES
+=================================
 */
+
+app.use("/api/auth", authRoutes);
+
+/*
+=================================
+PROTECTED ROUTES
+=================================
+*/
+
 app.use("/api/dispatch", authMiddleware, dispatchRoutes);
 app.use("/api/dispatch", authMiddleware, dispatchMasterRoutes);
+
 app.use("/api/fabrics", authMiddleware, fabricsRoutes);
 app.use("/api/features", authMiddleware, featuresRoutes);
+
 app.use("/api/jobs", authMiddleware, jobRoutes);
+
 app.use("/api/machines", authMiddleware, machineRoutes);
+
 app.use("/api/parties", authMiddleware, partyRoutes);
 app.use("/api/parties/upload", authMiddleware, partyUploadRoutes);
+
 app.use("/api/production", authMiddleware, productionRoutes);
+
 app.use("/api/reports", authMiddleware, reportRoutes);
+
 app.use("/api/users", authMiddleware, userRoutes);
+
 app.use("/api/yarn", authMiddleware, yarnRoutes);
+
 app.use("/api/employees", authMiddleware, employeeRoutes);
-app.use("/api/colors", colorRoutes);
+
+app.use("/api/colors", authMiddleware, colorRoutes);
+
 /*
-# STATIC FILES
+=================================
+STATIC FILES
+=================================
 */
+
 app.use("/uploads", express.static("uploads"));
 
 /*
-# ROOT
+=================================
+ROOT
+=================================
 */
+
 app.get("/", (req, res) => {
   res.send("BBJOMS API Running 🚀");
 });
 
 /*
-# 404 HANDLER
+=================================
+404 HANDLER
+=================================
 */
-app.use((req, res) => {
-  res.status(404).json({
-    error: "API route not found",
-  });
-});
+
+app.use(notFound);
 
 /*
-# GLOBAL ERROR HANDLER
+=================================
+GLOBAL ERROR HANDLER
+=================================
 */
-app.use((err, req, res, next) => {
-  console.error("❌ Error:", err.message);
-  res.status(500).json({
-    error: "Internal Server Error",
-  });
-});
+
+app.use(errorHandler);
 
 export default app;

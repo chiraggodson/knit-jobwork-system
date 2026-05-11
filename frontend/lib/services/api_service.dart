@@ -488,24 +488,25 @@ if (token != null) {
 
   /* ================= MACHINES ================= */
 
-  static Future<List<dynamic>> getMachines() async {
+ static Future<List<dynamic>> getMachines() async {
   final headers = await getHeaders();
 
-  print("HEADERS SENT: $headers");
 
   final res = await http.get(
     Uri.parse("$baseUrl/api/machines"),
     headers: headers,
   );
 
-  print("STATUS: ${res.statusCode}");
-  print("BODY: ${res.body}");
+ 
+  final decoded = jsonDecode(res.body);
 
   if (res.statusCode != 200) {
-    throw Exception("Failed to load machines: ${res.body}");
+    throw Exception(
+      decoded['message'] ?? 'Failed to load machines',
+    );
   }
 
-  return jsonDecode(res.body);
+  return decoded['data'];
 }
 
   static Future<void> createMachine(String machineNo) async {
